@@ -1,0 +1,32 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import GigList from '../../components/GigList.astro';
+import { getGigs } from '../../data/gigs';
+import { langPaths, localePath, useT, type Lang } from '../../i18n/ui';
+
+export const getStaticPaths = langPaths;
+const { lang } = Astro.props as { lang: Lang };
+const t = useT(lang);
+const { upcoming, past } = await getGigs();
+---
+<Base lang={lang} title={t('live.title')}>
+  <PageHeader title={t('live.title')} />
+  <section class="mx-auto max-w-3xl px-4 py-14">
+    <h2 class="mb-4 text-3xl">{t('live.upcoming')}</h2>
+    {upcoming.length ? (
+      <GigList gigs={upcoming} lang={lang} />
+    ) : (
+      <div class="sticker p-5">
+        <p class="font-medium">{t('live.none')}</p>
+        <a class="btn mt-4 bg-gold !py-1.5 !text-base" href={localePath(lang, '/booking/')}>{t('hero.book')}</a>
+      </div>
+    )}
+    {past.length > 0 && (
+      <>
+        <h2 class="mt-12 mb-4 text-3xl">{t('live.past')}</h2>
+        <GigList gigs={past} lang={lang} past />
+      </>
+    )}
+  </section>
+</Base>

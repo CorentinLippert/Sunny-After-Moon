@@ -1,0 +1,63 @@
+---
+import Base from '../../layouts/Base.astro';
+import Hero from '../../components/Hero.astro';
+import AlbumCard from '../../components/AlbumCard.astro';
+import MemberCard from '../../components/MemberCard.astro';
+import GigList from '../../components/GigList.astro';
+import { albums, members, spotifyEmbed, youtubeEmbed } from '../../data/band';
+import { getGigs } from '../../data/gigs';
+import { langPaths, localePath, useT, type Lang } from '../../i18n/ui';
+
+export const getStaticPaths = langPaths;
+const { lang } = Astro.props as { lang: Lang };
+const t = useT(lang);
+const { upcoming, past } = await getGigs();
+const shownGigs = upcoming.length ? upcoming.slice(0, 3) : past.slice(0, 3);
+---
+<Base lang={lang}>
+  <Hero lang={lang} />
+
+  <section class="mx-auto max-w-6xl px-4 py-14">
+    <div class="grid items-start gap-8 md:grid-cols-[1fr_1.4fr]">
+      <div>
+        <h2 class="text-4xl">{t('home.latest')}</h2>
+        <p class="mt-2 text-muted">{t('home.latestText')}</p>
+        <div class="mt-6 max-w-xs"><AlbumCard album={albums[0]} lang={lang} /></div>
+      </div>
+      <div class="sticker overflow-hidden p-0">
+        <iframe title="Spotify" src={spotifyEmbed} class="block h-[420px] w-full" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <section class="border-y-3 border-ink bg-sky/25">
+    <div class="mx-auto max-w-6xl px-4 py-14">
+      <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <h2 class="text-4xl">{t('home.gigs')}</h2>
+        <a class="btn bg-card !text-ink !py-1.5 !text-base" href={localePath(lang, '/live/')}>{t('home.allGigs')} →</a>
+      </div>
+      {!upcoming.length && <p class="mb-4 font-medium">{t('live.none')}</p>}
+      <GigList gigs={shownGigs} lang={lang} past={!upcoming.length} />
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-6xl px-4 py-14">
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h2 class="text-4xl">{t('home.meet')}</h2>
+        <p class="mt-1 text-muted">{t('home.meetText')}</p>
+      </div>
+      <a class="btn bg-card !text-ink !py-1.5 !text-base" href={localePath(lang, '/band/')}>{t('nav.band')} →</a>
+    </div>
+    <div class="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-4">
+      {members.map((m, i) => <MemberCard member={m} lang={lang} index={i} />)}
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-6xl px-4 pb-6">
+    <h2 class="mb-6 text-4xl">{t('home.watch')}</h2>
+    <div class="sticker overflow-hidden">
+      <iframe title="YouTube" src={youtubeEmbed} class="block aspect-video w-full" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+  </section>
+</Base>

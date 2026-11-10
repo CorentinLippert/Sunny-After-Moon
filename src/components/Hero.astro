@@ -1,0 +1,44 @@
+---
+import { localePath, useT, type Lang } from '../i18n/ui';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = useT(lang);
+// Fixed star positions so the build is stable.
+const stars = [[8,12],[18,30],[27,8],[40,22],[55,10],[63,28],[72,6],[85,18],[92,34],[12,48],[48,40],[78,44]];
+---
+<section class="sky relative overflow-hidden border-b-3 border-ink">
+  <div class="stars pointer-events-none absolute inset-0" aria-hidden="true">
+    {stars.map(([x, y], i) => (
+      <span class="absolute block rounded-full bg-white" style={`left:${x}%;top:${y}%;width:${i % 3 ? 3 : 5}px;height:${i % 3 ? 3 : 5}px`}></span>
+    ))}
+  </div>
+
+  <div class="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pt-12 pb-28 md:grid-cols-[1.2fr_1fr] md:pt-20 md:pb-36">
+    <div class="relative z-10">
+      <p class="mb-4 mr-24 inline-block rounded-full sm:mr-32 md:mr-0 border-2 border-ink bg-card px-3 py-1 text-sm font-bold">{t('hero.kicker')}</p>
+      <h1 class="text-5xl text-[#2b1d3a] dark:text-[#fdf3e1] sm:text-6xl md:text-7xl">
+        Sunny After Moon
+      </h1>
+      <p class="mt-3 font-display text-2xl text-[#2b1d3a] dark:text-gold sm:text-3xl">{t('hero.title')}</p>
+      <p class="mt-5 max-w-xl text-lg font-medium text-[#2b1d3a] dark:text-[#fdf3e1]">{t('hero.lead')}</p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a class="btn bg-gold" href={localePath(lang, '/music/')}>▶ {t('hero.listen')}</a>
+        <a class="btn bg-card !text-ink" href={localePath(lang, '/booking/')}>{t('hero.book')}</a>
+      </div>
+      <p class="mt-6 inline-flex max-w-xl items-start gap-2 rounded-2xl border-2 border-dashed border-ink/60 bg-card/60 px-3 py-2 text-sm font-medium">
+        <span aria-hidden="true">🎮</span><span>{t('hero.game')}</span>
+      </p>
+    </div>
+
+    <div class="absolute top-6 right-4 aspect-square w-20 opacity-90 sm:w-28 md:relative md:top-auto md:right-auto md:mx-auto md:w-80 md:opacity-100" aria-hidden="true">
+      <div class="orb bob absolute inset-0 overflow-hidden rounded-full border-3 border-ink">
+        <div class="orb-bite absolute inset-0 rounded-full"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rolling hills along the bottom -->
+  <svg class="absolute inset-x-0 bottom-0 h-20 w-full md:h-28" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 70 C 200 20, 380 110, 620 60 S 1040 10, 1440 70 V120 H0Z" fill="var(--bg)" stroke="var(--ink)" stroke-width="4" />
+  </svg>
+</section>

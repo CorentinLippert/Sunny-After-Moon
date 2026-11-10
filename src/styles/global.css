@@ -1,0 +1,116 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where([data-theme='night'], [data-theme='night'] *));
+
+@theme {
+  --font-display: 'Lilita One', system-ui, sans-serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+
+  --color-bg: var(--bg);
+  --color-ink: var(--ink);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-sun: #ff7a3d;
+  --color-gold: #ffc23d;
+  --color-coral: #ff5d73;
+  --color-sky: #5ec4e8;
+  --color-night: #1a1440;
+}
+
+:root {
+  --bg: #fff4e0;
+  --ink: #2b1d3a;
+  --card: #ffffff;
+  --muted: #6b5a73;
+  --sky-top: #ffd36e;
+  --sky-mid: #ff9a5a;
+  --sky-bottom: #ff6f7d;
+  --orb: #ffe680;
+  --orb-glow: rgba(255, 214, 102, 0.55);
+  color-scheme: light;
+}
+
+[data-theme='night'] {
+  --bg: #120d2e;
+  --ink: #fdf3e1;
+  --card: #1e1747;
+  --muted: #b7aed6;
+  --sky-top: #0b0824;
+  --sky-mid: #231a5c;
+  --sky-bottom: #4b2a7a;
+  --orb: #eeeaff;
+  --orb-glow: rgba(200, 190, 255, 0.35);
+  color-scheme: dark;
+}
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+}
+
+/* Sticker look: thick outline + hard offset shadow */
+.sticker {
+  border: 3px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--ink);
+  border-radius: 1.25rem;
+  background: var(--card);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  border-radius: 999px;
+  padding: 0.7rem 1.4rem;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: #2b1d3a;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn:hover { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 6px 6px 0 var(--ink); }
+.btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+
+.wobble { transition: transform 0.2s ease; }
+.wobble:hover { transform: rotate(-1.5deg) scale(1.02); }
+
+.sky {
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 55%, var(--sky-bottom) 100%);
+  transition: background 0.6s ease;
+}
+
+.orb {
+  background: var(--orb);
+  box-shadow: 0 0 0 18px var(--orb-glow), 0 0 80px 30px var(--orb-glow);
+  transition: background 0.6s ease, box-shadow 0.6s ease;
+}
+/* The moon's bite: a circle in sky colour that slides in at night */
+.orb-bite {
+  background: var(--sky-mid);
+  transform: translate(120%, -30%);
+  transition: transform 0.7s ease, background 0.6s ease;
+}
+[data-theme='night'] .orb-bite { transform: translate(35%, -20%); }
+
+.stars { opacity: 0; transition: opacity 0.6s ease; }
+[data-theme='night'] .stars { opacity: 1; }
+
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.bob { animation: bob 3.2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

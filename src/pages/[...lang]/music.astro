@@ -1,0 +1,26 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import AlbumCard from '../../components/AlbumCard.astro';
+import { albums, links, spotifyEmbed } from '../../data/band';
+import { langPaths, useT, type Lang } from '../../i18n/ui';
+
+export const getStaticPaths = langPaths;
+const { lang } = Astro.props as { lang: Lang };
+const t = useT(lang);
+---
+<Base lang={lang} title={t('music.title')}>
+  <PageHeader title={t('music.title')} intro={t('music.intro')} />
+  <section class="mx-auto max-w-6xl px-4 py-14">
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {albums.map((a) => <AlbumCard album={a} lang={lang} showTracks />)}
+    </div>
+    <div class="mt-12 sticker overflow-hidden">
+      <iframe title="Spotify" src={spotifyEmbed} class="block h-[480px] w-full" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+    </div>
+    <p class="mt-6 flex flex-wrap gap-3">
+      <a class="btn bg-gold" href={links.bandcamp}>Bandcamp ↗</a>
+      <a class="btn bg-[#7bd389]" href={links.spotify}>Spotify ↗</a>
+    </p>
+  </section>
+</Base>

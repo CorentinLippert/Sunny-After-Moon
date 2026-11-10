@@ -1,0 +1,26 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { useT, type Lang } from '../i18n/ui';
+interface Props { gigs: CollectionEntry<'gigs'>[]; lang: Lang; past?: boolean }
+const { gigs, lang, past = false } = Astro.props;
+const t = useT(lang);
+const locale = { en: 'en-GB', nl: 'nl-BE', fr: 'fr-BE' }[lang];
+const day = (d: Date) => d.toLocaleDateString(locale, { day: 'numeric' });
+const month = (d: Date) => d.toLocaleDateString(locale, { month: 'short' });
+const year = (d: Date) => d.getFullYear();
+---
+<ul class="space-y-3">
+  {gigs.map(({ data }) => (
+    <li class:list={['sticker flex items-center gap-4 p-3 sm:p-4', past && 'opacity-80']}>
+      <div class:list={['grid w-20 shrink-0 place-items-center rounded-xl border-2 border-ink py-1 text-center text-[#2b1d3a]', past ? 'bg-sky/60' : 'bg-gold']}>
+        <span class="font-display text-2xl leading-none">{day(data.date)}</span>
+        <span class="text-xs font-bold uppercase">{month(data.date)}</span><span class="text-xs font-bold">{year(data.date)}</span>
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="font-display text-xl">{data.venue}</p>
+        {data.city && <p class="text-sm text-muted">{data.city}</p>}
+      </div>
+      {!past && data.tickets && <a class="btn bg-coral !py-1.5 !text-base" href={data.tickets}>{t('live.tickets')}</a>}
+    </li>
+  ))}
+</ul>

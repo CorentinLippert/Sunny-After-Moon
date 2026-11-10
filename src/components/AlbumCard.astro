@@ -1,0 +1,26 @@
+---
+import type { Album } from '../data/band';
+import { useT, type Lang } from '../i18n/ui';
+interface Props { album: Album; lang: Lang; showTracks?: boolean }
+const { album, lang, showTracks = false } = Astro.props;
+const t = useT(lang);
+const [a, b] = album.colors;
+---
+<article class="sticker wobble flex flex-col overflow-hidden">
+  <!-- Placeholder cover: swap for the real artwork in /public/covers when available -->
+  <div class="relative grid aspect-square place-items-center border-b-3 border-ink p-6 text-center" style={`background:linear-gradient(135deg, ${a}, ${b})`}>
+    <p class="font-display text-3xl text-white drop-shadow-[3px_3px_0_rgba(43,29,58,0.8)]">{album.title}</p>
+    <span class="absolute right-3 bottom-3 rounded-full border-2 border-ink bg-gold px-2 py-0.5 text-sm font-bold text-[#2b1d3a]">{album.year}</span>
+  </div>
+  <div class="flex flex-1 flex-col gap-3 p-4">
+    {showTracks && album.tracks && (
+      <details>
+        <summary class="cursor-pointer font-bold">{t('music.tracks')} ({album.tracks.length})</summary>
+        <ol class="mt-2 list-decimal space-y-0.5 pl-6 text-sm">
+          {album.tracks.map((tr) => <li>{tr}</li>)}
+        </ol>
+      </details>
+    )}
+    <a class="btn mt-auto self-start bg-gold !py-1.5 !text-base" href={album.url}>{t('music.buy')} ↗</a>
+  </div>
+</article>
