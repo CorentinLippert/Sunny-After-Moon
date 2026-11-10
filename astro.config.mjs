@@ -3,7 +3,7 @@ import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  site: 'https://sunnyaftermoon.vercel.app',
+  site: 'https://sunny-after-moon.vercel.app',
   i18n: {
     locales: ['en', 'nl', 'fr'],
     defaultLocale: 'en',
