@@ -23,14 +23,14 @@ export interface Member {
 }
 
 export const members: Member[] = [
-  { name: 'Yorick Musschoot', instrument: 'vocals', color: '#ff7a3d' },
-  { name: 'Corentin Lippert', instrument: 'sax', color: '#ffc23d' },
-  { name: 'Tijl Lippert', instrument: 'keys', color: '#ff5d73' },
-  { name: 'Sam De Wandel', instrument: 'guitar1', color: '#7bd389' },
-  { name: 'Hans De Roey', instrument: 'guitar2', color: '#5ec4e8' },
-  { name: 'Simon Fonteyn', instrument: 'bass', color: '#a98bff' },
-  { name: 'Wim Smeyers', instrument: 'drums', color: '#ff9f1c' },
-  { name: 'Tomas Boulanger', instrument: 'percussion', color: '#2ec4b6' },
+  { name: 'Yorick Musschoot', instrument: 'vocals', color: '#ce460a' },
+  { name: 'Corentin Lippert', instrument: 'sax', color: '#fcc400' },
+  { name: 'Tijl Lippert', instrument: 'keys', color: '#6cbc92' },
+  { name: 'Sam De Wandel', instrument: 'guitar1', color: '#b2cc3c' },
+  { name: 'Hans De Roey', instrument: 'guitar2', color: '#ffec00' },
+  { name: 'Simon Fonteyn', instrument: 'bass', color: '#e8792a' },
+  { name: 'Wim Smeyers', instrument: 'drums', color: '#c9533a' },
+  { name: 'Tomas Boulanger', instrument: 'percussion', color: '#4fa37e' },
 ];
 
 export interface Album {
@@ -46,13 +46,13 @@ export const albums: Album[] = [
     title: 'For the People',
     year: 2024,
     url: 'https://sunnyaftermoon.bandcamp.com/',
-    colors: ['#ff7a3d', '#2b1d5c'],
+    colors: ['#ce460a', '#96261b'],
   },
   {
     title: 'Where do we go from here?',
     year: 2019,
     url: 'https://sunnyaftermoon.bandcamp.com/',
-    colors: ['#5ec4e8', '#1a1440'],
+    colors: ['#6cbc92', '#0f2a26'],
   },
   {
     title: 'The Mental Mess',
@@ -62,6 +62,6 @@ export const albums: Album[] = [
       'Never Fear', 'Think4Free', 'Another Way', 'Balkan Booby', 'Mental Mess', 'Petit Agneau',
       'Levensgenieter', 'Discorientation', 'Cup Up', 'Ska #', 'Sure&Sure',
     ],
-    colors: ['#ffc23d', '#ff5d73'],
+    colors: ['#fcc400', '#ce460a'],
   },
 ];
