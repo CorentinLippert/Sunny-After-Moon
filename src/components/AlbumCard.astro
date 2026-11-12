@@ -9,8 +9,8 @@ const [a, b] = album.colors;
 <article class="sticker wobble flex flex-col overflow-hidden">
   <!-- Placeholder cover: swap for the real artwork in /public/covers when available -->
   <div class="relative grid aspect-square place-items-center border-b-3 border-ink p-6 text-center" style={`background:linear-gradient(135deg, ${a}, ${b})`}>
-    <p class="font-display text-3xl text-white drop-shadow-[3px_3px_0_rgba(43,29,58,0.8)]">{album.title}</p>
-    <span class="absolute right-3 bottom-3 rounded-full border-2 border-ink bg-gold px-2 py-0.5 text-sm font-bold text-[#2b1d3a]">{album.year}</span>
+    <p class="font-display text-3xl text-white drop-shadow-[3px_3px_0_rgba(58,20,12,0.8)]">{album.title}</p>
+    <span class="absolute right-3 bottom-3 rounded-full border-2 border-ink bg-gold px-2 py-0.5 text-sm font-bold text-[#3a140c]">{album.year}</span>
   </div>
   <div class="flex flex-1 flex-col gap-3 p-4">
     {showTracks && album.tracks && (

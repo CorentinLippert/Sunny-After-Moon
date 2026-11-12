@@ -1,0 +1,13 @@
+---
+// Group picture of the band on a round backdrop.
+// Day mode shows the photo, night mode swaps in the illustrated version.
+interface Props { alt: string; class?: string; eager?: boolean }
+const { alt, class: cls, eager = false } = Astro.props;
+---
+<figure class:list={['relative mx-auto aspect-square w-full max-w-xl', cls]}>
+  <div class="band-disc absolute inset-[6%] rounded-full border-3 border-ink" aria-hidden="true"></div>
+  <div class="relative h-full w-full">
+    <img src="/images/band-photo.webp" alt={alt} width="1237" height="1400" class="band-day absolute inset-0 h-full w-full object-contain" loading={eager ? 'eager' : 'lazy'} />
+    <img src="/images/band-illustration.webp" alt="" width="1233" height="1400" class="band-night absolute inset-0 h-full w-full object-contain" loading="lazy" />
+  </div>
+</figure>
