@@ -4,16 +4,18 @@ import numpy as np
 # usage: anim.py <cut dir> <out name> "<frame>:<ms>,<frame>:<ms>,..." [size] [still index]
 CUT, NAME = sys.argv[1], sys.argv[2]
 info=json.load(open(f'{CUT}/info.json'))
-SEQ=[(a, int(b)) for a, b in (x.split(':') for x in sys.argv[3].split(','))]
+# each item: frame:ms or frame:ms:scale (scale < 1 shrinks a frame where the musician stood closer to the camera)
+SEQ=[(p[0], int(p[1]), float(p[2]) if len(p) > 2 else 1.0) for p in (x.split(':') for x in sys.argv[3].split(','))]
 W=int(os.environ.get('CROP', 760)); OUTS=int(sys.argv[4]) if len(sys.argv)>4 else 480
 STILL=int(sys.argv[5]) if len(sys.argv)>5 else 2
 frames=[]
-for n,d in SEQ:
+for n,d,sc in SEQ:
     im=Image.open(f'{CUT}/{n}.png'); i=info[n]
     x=int(i['cx']); y=i['y0']
     if os.environ.get('ANCHOR') == 'neck':
         y = i['neck'] - int(os.environ.get('NECK_OFFSET', 470))
-    c=im.crop((x-W//2,y-60,x+W//2,y-60+W)).resize((OUTS,OUTS),Image.LANCZOS)
+    Wp=int(W/sc); top=y-int(60/sc)
+    c=im.crop((x-Wp//2,top,x-Wp//2+Wp,top+Wp)).resize((OUTS,OUTS),Image.LANCZOS)
     # fade the bottom of the body out, so frames where the photo stops early match the others
     a=np.asarray(c).copy(); h=a.shape[0]; f=int(h*0.16)
     ramp=np.clip((h-1-np.arange(h)-h*0.04)/(f),0,1)
