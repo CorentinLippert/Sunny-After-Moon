@@ -5,7 +5,7 @@ Turns a musician's green-screen photo series into the animated head shown on the
 ```sh
 pip install numpy pillow scipy
 python3 scripts/heads/key.py <folder with the JPGs> cut/       # key out the green, despill, warm grade, find head position
-python3 scripts/heads/anim.py cut/ wim "D18_0001:600,D18_0002:160,..."   # frame:milliseconds in play order
+python3 scripts/heads/anim.py cut/ wim "D18_0001:180,D18_0002:180,..."   # frame:milliseconds in play order (keep timings equal for a smooth turn)
 cp wim.webp wim-still.webp public/images/heads/
 ```
 
