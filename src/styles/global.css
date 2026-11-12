@@ -32,7 +32,7 @@
   --sky-bottom: #f08a2c;
   --orb: #6cbc92;
   --orb-glow: rgba(255, 236, 0, 0.6);
-  --disc: #6cbc92;
+  --disc: #ce460a;
   color-scheme: light;
 }
 
@@ -46,7 +46,7 @@
   --sky-bottom: #6a2216;
   --orb: #fbf3cf;
   --orb-glow: rgba(252, 196, 0, 0.22);
-  --disc: #96261b;
+  --disc: #ce460a;
   color-scheme: dark;
 }
 
