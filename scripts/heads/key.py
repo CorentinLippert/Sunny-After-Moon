@@ -48,7 +48,7 @@ def key(path):
     for i in border:
         keep[i] = True
     # small enclosed gaps (between hair strands) are background too
-    keep[(sizes < 400)] = True
+    keep[(sizes < int(os.environ.get('HOLE', 400)))] = True
     keep[0] = False
     bgzone = keep[lab]
     alpha = 1 - np.clip((s - LO) / (HI - LO), 0, 1)
