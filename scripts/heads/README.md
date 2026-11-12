@@ -18,3 +18,4 @@ Options (environment variables for `key.py`):
 Frame orders used so far:
 - Wim: `0001 0002 0003 0008 0010 0014 0012 0013 0007 0006 0005 0009 0011 0014 0012 0013`, 180 ms each
 - Corentin: `0015 0017 0018 0019 0022 0021 0023 0024 0025 0027 0016 0018 0020 0022 0021 0023 0024 0026 0028`, 180 ms each, still = first frame
+- Hans: key with `EDGE=1`; animate with `ANCHOR=neck NECK_OFFSET=600 CROP=860` (his mohawk sticks up differently per angle, so frames line up on the neck instead of the top of the hair). Order `0029 0031 0033 0035 0037 0038 0040 0042 0030 0032 0034 0036 0037 0039 0041 0043`, 180 ms each, still = first frame

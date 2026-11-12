@@ -92,7 +92,7 @@ def key(path):
     collar = ndi.binary_erosion(collar, iterations=2)
     g2 = np.where(collar, g, np.minimum(g, lim * 1.0 + 4))
     fgc[..., 1] = g2
-    if SHIRT:
+    if SHIRT or os.environ.get('EDGE') == '1':
         # a teal screen leaves a blue-green cast on hair edges: pull edge pixels of the head back to neutral
         edge = ndi.binary_dilation((alpha > 0.02) & (alpha < 0.98), iterations=2) & ~collar
         rr_, gg_, bb_ = fgc[..., 0], fgc[..., 1], fgc[..., 2]
@@ -132,6 +132,11 @@ if __name__ == '__main__':
         band = al[y0:y0 + 220]
         xs = np.arange(al.shape[1])
         cx = float((band.sum(0) * xs).sum() / band.sum())
-        info[name] = dict(y0=y0, cx=cx)
-        print(name, y0, round(cx))
+        # neck = narrowest row of the silhouette below the head: a steadier vertical anchor than the
+        # top of the hair when hairstyles stick up differently from one angle to the next
+        w = ndi.uniform_filter1d((al > 0.5).sum(1).astype(float), 15)
+        lo, hi = y0 + 250, min(y0 + 700, al.shape[0] - 1)
+        neck = int(lo + np.argmin(w[lo:hi]))
+        info[name] = dict(y0=y0, cx=cx, neck=neck)
+        print(name, y0, round(cx), neck)
     json.dump(info, open(f'{OUT}/info.json', 'w'))
