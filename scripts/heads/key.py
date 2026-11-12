@@ -47,6 +47,9 @@ def key(path):
     r, g, b = fgc[..., 0], fgc[..., 1], fgc[..., 2]
     lim = np.maximum(r, b)
     collar = (~bgzone) & (s > LO)
+    # only clothing (well below the top of the head) keeps its green; reflections on glasses etc. are despilled
+    top = int(np.where((~bgzone).sum(1) > 6)[0][0])
+    collar[:top + 380] = False
     collar = ndi.binary_erosion(collar, iterations=2)
     g2 = np.where(collar, g, np.minimum(g, lim * 1.0 + 4))
     fgc[..., 1] = g2
