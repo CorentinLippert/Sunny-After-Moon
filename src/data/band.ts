@@ -20,6 +20,7 @@ export interface Member {
   name: string;
   instrument: Instrument;
   color: string; // card colour, also used later for the game character
+  head?: string; // rotating-head animation in public/images/heads/<head>.webp (+ <head>-still.webp)
 }
 
 export const members: Member[] = [
@@ -29,7 +30,7 @@ export const members: Member[] = [
   { name: 'Sam De Wandel', instrument: 'guitar1', color: '#b2cc3c' },
   { name: 'Hans De Roey', instrument: 'guitar2', color: '#ffec00' },
   { name: 'Simon Fonteyn', instrument: 'bass', color: '#e8792a' },
-  { name: 'Wim Smeyers', instrument: 'drums', color: '#c9533a' },
+  { name: 'Wim Smeyers', instrument: 'drums', color: '#c9533a', head: 'wim' },
   { name: 'Tomas Boulanger', instrument: 'percussion', color: '#4fa37e' },
 ];
 
