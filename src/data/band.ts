@@ -24,15 +24,15 @@ export interface Member {
 }
 
 export const members: Member[] = [
-  // stage-plan order (Monia, 2026-11-13)
-  { name: 'Sam De Wandel', instrument: 'guitar1', color: '#b2cc3c', head: 'sam' },
-  { name: 'Yorick Musschoot', instrument: 'vocals', color: '#ce460a', head: 'yorick' },
-  { name: 'Corentin Lippert', instrument: 'sax', color: '#fcc400', head: 'corentin' },
-  { name: 'Hans De Roey', instrument: 'guitar2', color: '#ffec00', head: 'hans' },
-  { name: 'Tijl Lippert', instrument: 'keys', color: '#6cbc92', head: 'tijl' },
-  { name: 'Wim Smeyers', instrument: 'drums', color: '#c9533a', head: 'wim' },
-  { name: 'Simon Fonteyn', instrument: 'bass', color: '#e8792a', head: 'simon' },
-  { name: 'Tomas Boulanger', instrument: 'percussion', color: '#4fa37e', head: 'tomas' },
+  // stage-plan order (Monia, 2026-11-13); colours run sun (yellow) to moon (teal) in this order
+  { name: 'Sam De Wandel', instrument: 'guitar1', color: '#ffec00', head: 'sam' },
+  { name: 'Yorick Musschoot', instrument: 'vocals', color: '#fcc400', head: 'yorick' },
+  { name: 'Corentin Lippert', instrument: 'sax', color: '#f39a1e', head: 'corentin' },
+  { name: 'Hans De Roey', instrument: 'guitar2', color: '#e2622a', head: 'hans' },
+  { name: 'Tijl Lippert', instrument: 'keys', color: '#b2cc3c', head: 'tijl' },
+  { name: 'Wim Smeyers', instrument: 'drums', color: '#6cbc92', head: 'wim' },
+  { name: 'Simon Fonteyn', instrument: 'bass', color: '#4fa37e', head: 'simon' },
+  { name: 'Tomas Boulanger', instrument: 'percussion', color: '#3f8f86', head: 'tomas' },
 ];
 
 export interface Album {

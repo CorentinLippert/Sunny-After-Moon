@@ -5,7 +5,7 @@ interface Props { member: Member; lang: Lang; index: number }
 const { member, lang, index } = Astro.props;
 const t = useT(lang);
 // Placeholder icons until the band's own character drawings are ready.
-const icon = { vocals: '🎤', sax: '🎷', keys: '🎹', guitar1: '🎸', guitar2: '🎸', bass: '🎸', drums: '🥁', percussion: '🪘' }[member.instrument];
+const icon = { vocals: '🎤', sax: '🎷', keys: '🎹', guitar1: '🎸', guitar2: '🎸', bass: '🎸', drums: '🥁', percussion: '🔔' }[member.instrument];
 const tilt = index % 2 ? 'rotate-1' : '-rotate-1';
 ---
 <article class:list={['sticker wobble overflow-hidden', tilt]}>
