@@ -26,7 +26,7 @@ export interface Member {
 export const members: Member[] = [
   { name: 'Yorick Musschoot', instrument: 'vocals', color: '#ce460a', head: 'yorick' },
   { name: 'Corentin Lippert', instrument: 'sax', color: '#fcc400', head: 'corentin' },
-  { name: 'Tijl Lippert', instrument: 'keys', color: '#6cbc92' },
+  { name: 'Tijl Lippert', instrument: 'keys', color: '#6cbc92', head: 'tijl' },
   { name: 'Sam De Wandel', instrument: 'guitar1', color: '#b2cc3c', head: 'sam' },
   { name: 'Hans De Roey', instrument: 'guitar2', color: '#ffec00', head: 'hans' },
   { name: 'Simon Fonteyn', instrument: 'bass', color: '#e8792a', head: 'simon' },
