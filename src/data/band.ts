@@ -7,7 +7,7 @@ export const links = {
   facebook: 'https://www.facebook.com/sunnyaftermoon/',
   youtube: 'https://www.youtube.com/channel/UC5ghtEDXX_WP8H4SjOMR8Xw',
   vibe: 'https://vi.be/platform/sunnyaftermoon',
-  email: 'sunnyaftermoon@outlook.com',
+  email: 'sunnyaftermoonband@gmail.com',
 };
 
 export const spotifyEmbed = 'https://open.spotify.com/embed/artist/1yGE90VdkyNc89dT02jpP0?utm_source=generator&theme=0';
