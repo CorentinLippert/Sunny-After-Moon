@@ -5,12 +5,27 @@ interface Props { member: Member; lang: Lang; index: number }
 const { member, lang, index } = Astro.props;
 const t = useT(lang);
 // Placeholder icons until the band's own character drawings are ready.
-const icon = { vocals: '🎤', sax: '🎷', keys: '🎹', guitar1: '🎸', guitar2: '🎸', bass: '🎸', drums: '🥁', percussion: '🪘' }[member.instrument];
+const icon = { vocals: '🎤', sax: '🎷', keys: '🎹', guitar1: '🎸', guitar2: '🎸', bass: '🎸', drums: '🥁', percussion: '🔔' }[member.instrument];
 const tilt = index % 2 ? 'rotate-1' : '-rotate-1';
 ---
 <article class:list={['sticker wobble overflow-hidden', tilt]}>
-  <div class="relative grid aspect-[4/3] place-items-center border-b-3 border-ink" style={`background:${member.color}`}>
-    <span class="text-6xl drop-shadow-[3px_3px_0_rgba(58,20,12,0.6)]" aria-hidden="true">{icon}</span>
+  <div class="relative grid aspect-[4/3] place-items-center overflow-hidden border-b-3 border-ink" style={`background:${member.color}`}>
+    {member.head ? (
+      <>
+        <picture>
+          <source srcset={`/images/heads/${member.head}-still.webp`} media="(prefers-reduced-motion: reduce)" />
+          <img
+            src={`/images/heads/${member.head}.webp`}
+            alt={member.name}
+            width="480" height="480" loading="lazy" decoding="async"
+            class="absolute inset-x-0 bottom-0 mx-auto h-full w-auto"
+          />
+        </picture>
+        <span class="absolute right-2 top-2 text-3xl drop-shadow-[2px_2px_0_rgba(58,20,12,0.6)]" aria-hidden="true">{icon}</span>
+      </>
+    ) : (
+      <span class="text-6xl drop-shadow-[3px_3px_0_rgba(58,20,12,0.6)]" aria-hidden="true">{icon}</span>
+    )}
   </div>
   <div class="p-4">
     <h3 class="text-xl">{member.name}</h3>
