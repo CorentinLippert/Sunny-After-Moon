@@ -12,7 +12,7 @@ const year = (d: Date) => d.getFullYear();
 <ul class="space-y-3">
   {gigs.map(({ data }) => (
     <li class:list={['sticker flex items-center gap-4 p-3 sm:p-4', past && 'opacity-80']}>
-      <div class:list={['grid w-20 shrink-0 place-items-center rounded-xl border-2 border-ink py-1 text-center text-[#2b1d3a]', past ? 'bg-sky/60' : 'bg-gold']}>
+      <div class:list={['grid w-20 shrink-0 place-items-center rounded-xl border-2 border-ink py-1 text-center text-[#3a140c]', past ? 'bg-sky/60' : 'bg-gold']}>
         <span class="font-display text-2xl leading-none">{day(data.date)}</span>
         <span class="text-xs font-bold uppercase">{month(data.date)}</span><span class="text-xs font-bold">{year(data.date)}</span>
       </div>
