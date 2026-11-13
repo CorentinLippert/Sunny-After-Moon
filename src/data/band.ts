@@ -29,7 +29,7 @@ export const members: Member[] = [
   { name: 'Tijl Lippert', instrument: 'keys', color: '#6cbc92' },
   { name: 'Sam De Wandel', instrument: 'guitar1', color: '#b2cc3c', head: 'sam' },
   { name: 'Hans De Roey', instrument: 'guitar2', color: '#ffec00', head: 'hans' },
-  { name: 'Simon Fonteyn', instrument: 'bass', color: '#e8792a' },
+  { name: 'Simon Fonteyn', instrument: 'bass', color: '#e8792a', head: 'simon' },
   { name: 'Wim Smeyers', instrument: 'drums', color: '#c9533a', head: 'wim' },
   { name: 'Tomas Boulanger', instrument: 'percussion', color: '#4fa37e' },
 ];

@@ -18,7 +18,9 @@ for n,d,sc in SEQ:
     c=im.crop((x-Wp//2,top,x-Wp//2+Wp,top+Wp)).resize((OUTS,OUTS),Image.LANCZOS)
     # fade the bottom of the body out, so frames where the photo stops early match the others
     a=np.asarray(c).copy(); h=a.shape[0]; f=int(h*0.16)
-    ramp=np.clip((h-1-np.arange(h)-h*0.04)/(f),0,1)
+    # where the photo itself stops above the crop bottom, end the fade there instead
+    end=min(h, int((im.height-top)*OUTS/Wp))
+    ramp=np.clip((end-1-np.arange(h)-h*0.04)/(f),0,1)
     a[...,3]=(a[...,3]*ramp[:,None]).astype(np.uint8)
     c=Image.fromarray(a)
     frames.append((c,d))
