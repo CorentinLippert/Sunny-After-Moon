@@ -31,7 +31,7 @@ export const members: Member[] = [
   { name: 'Hans De Roey', instrument: 'guitar2', color: '#ffec00', head: 'hans' },
   { name: 'Simon Fonteyn', instrument: 'bass', color: '#e8792a', head: 'simon' },
   { name: 'Wim Smeyers', instrument: 'drums', color: '#c9533a', head: 'wim' },
-  { name: 'Tomas Boulanger', instrument: 'percussion', color: '#4fa37e' },
+  { name: 'Tomas Boulanger', instrument: 'percussion', color: '#4fa37e', head: 'tomas' },
 ];
 
 export interface Album {
