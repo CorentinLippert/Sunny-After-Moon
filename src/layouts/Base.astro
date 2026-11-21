@@ -19,6 +19,7 @@ const nav = [
   ['/live/', t('nav.live')],
   ['/videos/', t('nav.videos')],
   ['/booking/', t('nav.booking')],
+  ['/game/', t('nav.game')],
 ] as const;
 const pageTitle = title ? `${title} · Sunny After Moon` : 'Sunny After Moon';
 const current = (p: string) => (p === '/' ? rest === '/' : rest.startsWith(p));
