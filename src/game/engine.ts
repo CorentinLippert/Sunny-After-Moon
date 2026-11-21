@@ -158,7 +158,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   // ---------------- input ----------------
   const keys = { jump: false, action: false };
   let jumpPressed = false, actionPressed = false, anyPressed = false;
-  const nav = { left: false, right: false, up: false, down: false, confirm: false, back: false };
+  const nav = { left: false, right: false, up: false, down: false, confirm: false, back: false, menu: false };
   const JUMP_KEYS = ['Space', 'ArrowUp', 'KeyW', 'KeyZ'];
   const ACT_KEYS = ['KeyX', 'KeyJ', 'KeyK', 'Enter', 'ShiftLeft', 'ShiftRight', 'ControlLeft'];
   addEventListener('keydown', (e) => {
@@ -175,7 +175,8 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     if (code === 'ArrowUp' || code === 'KeyW' || code === 'KeyZ') nav.up = true;
     if (code === 'ArrowDown' || code === 'KeyS') nav.down = true;
     if (code === 'Enter' || code === 'Space') nav.confirm = true;
-    if (code === 'Escape' || code === 'KeyP') nav.back = true;
+    if (code === 'KeyP') nav.back = true;
+    if (code === 'Escape') nav.menu = true;
     if (code === 'KeyM') song.setMuted(!song.muted);
   });
   addEventListener('keyup', (e) => {
@@ -730,6 +731,12 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
       drawChosen(clock);
       if (modeT > 2.0 && (song.buf || virtual)) startRun();
       else if (modeT > 2.0) text(loadingErr ? loadingErr : T('loading'), W / 2, 200, 10, PAL.cream);
+    } else if (nav.menu && (mode === 'play' || mode === 'paused' || mode === 'dead' || mode === 'win')) {
+      // Esc: leave the level and go back to the character select
+      song.stop();
+      mode = 'select'; modeT = 0;
+      floats.length = 0;
+      drawSelect(clock);
     } else if (mode === 'play') {
       if (nav.back) { song.stop(); mode = 'paused'; }
       else {
@@ -761,7 +768,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     }
     (window as any).__game = { mode, t: lastT, deaths, hearts, y };
     pointer = null; anyPressed = false;
-    nav.left = nav.right = nav.up = nav.down = nav.confirm = nav.back = false;
+    nav.left = nav.right = nav.up = nav.down = nav.confirm = nav.back = nav.menu = false;
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
