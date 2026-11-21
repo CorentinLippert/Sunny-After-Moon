@@ -260,3 +260,27 @@ export function heart(c: Ctx, x: number, y: number, full: boolean) {
         c.fillRect(x + k, y + r, 1, 1);
       }
 }
+
+// --- A cartoon toilet, for babushkas hit by the brown note (tank behind her, bowl in front) ---
+export function toiletBack(c: Ctx, x: number, footY: number) {
+  const X = Math.round(x), Y = Math.round(footY);
+  c.fillStyle = PAL.ink;
+  c.fillRect(X - 13, Y - 44, 26, 34);
+  c.fillStyle = '#ffffff';
+  c.fillRect(X - 12, Y - 43, 24, 32);
+  c.fillStyle = '#cfd8dc';
+  c.fillRect(X - 12, Y - 43, 24, 4);
+  c.fillStyle = PAL.gold;
+  c.fillRect(X + 7, Y - 38, 4, 2); // flush handle
+}
+export function toiletFront(c: Ctx, x: number, footY: number) {
+  const X = Math.round(x), Y = Math.round(footY);
+  c.fillStyle = PAL.ink;
+  c.fillRect(X - 15, Y - 14, 30, 6);
+  c.fillRect(X - 9, Y - 9, 18, 9);
+  c.fillStyle = '#ffffff';
+  c.fillRect(X - 14, Y - 13, 28, 4);
+  c.fillRect(X - 8, Y - 8, 16, 8);
+  c.fillStyle = '#cfd8dc';
+  c.fillRect(X - 8, Y - 3, 16, 3);
+}

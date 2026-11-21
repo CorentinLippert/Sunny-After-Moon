@@ -22,14 +22,14 @@ type Action = 'shoot' | 'hit';
 interface Char { id: string; name: string; action: Action; proj?: string; eyes: [number, number, number]; front?: number; color: string }
 
 export const CHARS: Char[] = [
-  { id: 'sam', name: 'Sam', action: 'hit', eyes: [32, 16, 15], color: '#ffec00' },
+  { id: 'sam', name: 'Sam', action: 'shoot', proj: 'riff', eyes: [32, 16, 15], color: '#ffec00' },
   { id: 'yorick', name: 'Yorick', action: 'shoot', proj: 'voice', eyes: [29.5, 22.5, 22], color: '#6cbc92' },
   { id: 'corentin', name: 'Corentin', action: 'shoot', proj: 'sax', eyes: [32, 25.5, 23], color: '#fcc400' },
-  { id: 'hans', name: 'Hans', action: 'hit', eyes: [32, 33, 18], color: '#4fa37e' },
+  { id: 'hans', name: 'Hans', action: 'shoot', proj: 'pick', eyes: [32, 33, 18], color: '#4fa37e' },
   { id: 'tijl', name: 'Tijl', action: 'shoot', proj: 'keys', eyes: [32, 29.5, 20], color: '#3f8f86' },
   { id: 'wim', name: 'Wim', action: 'shoot', proj: 'stick', eyes: [32, 26, 23], front: 2, color: '#e2622a' },
-  { id: 'simon', name: 'Simon', action: 'hit', eyes: [32, 18.5, 16], color: '#b2cc3c' },
-  { id: 'tomas', name: 'Tomas', action: 'hit', eyes: [31.5, 24.5, 24], color: '#f39a1e' },
+  { id: 'simon', name: 'Simon', action: 'shoot', proj: 'brown', eyes: [32, 18.5, 16], color: '#b2cc3c' },
+  { id: 'tomas', name: 'Tomas', action: 'shoot', proj: 'djembe', eyes: [31.5, 24.5, 24], color: '#f39a1e' },
 ];
 
 interface Level {
@@ -47,7 +47,7 @@ interface Level {
   finish: number;
 }
 
-interface Bab { x: number; kind: 'hop' | 'big' | 'sleep'; dead: boolean; vx: number; vy: number; dy: number; rot: number; hits: number; flash: number }
+interface Bab { x: number; kind: 'hop' | 'big' | 'sleep'; dead: boolean; vx: number; vy: number; dy: number; rot: number; hits: number; flash: number; toilet: number }
 interface Float { x: number; y: number; text: string; t: number; color: string }
 interface Proj { x: number; y: number; vx: number; t: number; kind: string }
 
@@ -237,7 +237,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   const inPit = (x: number) => level.pits.some(([a, b]) => x > a + 3 && x < b - 3);
 
   function resetBabs(fromX: number) {
-    babs = level.babushkas.map((b) => ({ x: b.x, kind: b.kind, dead: false, vx: 0, vy: 0, dy: 0, rot: 0, hits: 0, flash: 0 }));
+    babs = level.babushkas.map((b) => ({ x: b.x, kind: b.kind, dead: false, vx: 0, vy: 0, dy: 0, rot: 0, hits: 0, flash: 0, toilet: -1 }));
     // babushkas you already passed stay where they were (dead or alive does not matter behind you)
     for (const b of babs) if (b.x < fromX) b.dead = true;
   }
@@ -329,7 +329,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   function doAction(x: number) {
     if (actCool > 0) return;
     actCool = 0.32; actT = 0.22;
-    if (char.action === 'shoot') projs.push({ x: x + 14, y: y - 22, vx: 330, t: 0, kind: char.proj || 'note' });
+    if (char.action === 'shoot') projs.push({ x: x + 14, y: y - 22, vx: char.proj === 'brown' ? 260 : 330, t: 0, kind: char.proj || 'note' });
     else {
       // melee: whatever is just in front gets bonked
       for (const b of babs) if (!b.dead && b.x - x > -10 && b.x - x < 52) bonk(b, x);
@@ -337,9 +337,16 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     }
   }
 
-  function bonk(b: Bab, x: number) {
+  function bonk(b: Bab, x: number, how: 'default' | 'brown' = 'default') {
     b.hits++;
     b.flash = 0.15;
+    if (how === 'brown') {
+      // Simon's bass hits the brown note: the babushka urgently needs a toilet
+      b.dead = true; b.toilet = 0; b.vx = b.vy = 0; b.dy = 0;
+      babsBonked++; score += 60;
+      say(T('brownNote'), b.x, GROUND - 58, '#c08a4a');
+      return;
+    }
     if (b.kind === 'big' && b.hits < 2) { say(T('oof'), b.x, GROUND - 56, PAL.orange); return; }
     b.dead = true; b.vx = 160 + Math.random() * 80; b.vy = -260; b.rot = 0;
     babsBonked++; score += 50;
@@ -428,6 +435,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     const ph = beatPhase(t);
     for (const b of babs) {
       b.flash = Math.max(0, b.flash - dtReal);
+      if (b.toilet >= 0) { b.toilet += dtReal; if (b.toilet > 1.6) b.toilet = -2; continue; }
       if (b.dead) {
         if (b.vy !== 0 || b.vx !== 0) { b.x += b.vx * dtReal; b.dy += b.vy * dtReal; b.vy += 700 * dtReal; b.rot += dtReal * 12; if (b.dy > 300) b.vx = b.vy = 0; }
         continue;
@@ -448,7 +456,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     // projectiles
     for (const p of projs) {
       p.x += p.vx * dtReal + (x - prevX) * 0; p.t += dtReal;
-      for (const b of babs) if (!b.dead && Math.abs(p.x - b.x) < 14 && p.y > GROUND - 50) { bonk(b, x); p.t = 9; }
+      for (const b of babs) if (!b.dead && Math.abs(p.x - b.x) < (p.kind === 'brown' || p.kind === 'djembe' ? 20 : 14) && p.y > GROUND - 60) { bonk(b, x, p.kind === 'brown' ? 'brown' : 'default'); p.t = 9; }
     }
     for (let i = projs.length - 1; i >= 0; i--) if (projs[i].t > 0.7) projs.splice(i, 1);
 
@@ -525,6 +533,30 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     } else if (p.kind === 'keys') {
       c.fillStyle = '#fff'; c.fillRect(-6, -4, 12, 8); c.fillStyle = PAL.ink;
       c.fillRect(-6, -4, 12, 1); c.fillRect(-2, -4, 2, 5); c.fillRect(2, -4, 2, 5); c.fillRect(-6, 3, 12, 1);
+    } else if (p.kind === 'riff') {
+      // power chord lightning
+      c.strokeStyle = PAL.yellow; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(-9, -5); c.lineTo(-3, 1); c.lineTo(0, -3); c.lineTo(5, 4); c.lineTo(9, 0); c.stroke();
+      c.fillStyle = '#fff'; c.fillRect(-1, -4, 2, 2);
+    } else if (p.kind === 'pick') {
+      c.rotate(p.t * 20);
+      c.fillStyle = PAL.ink; c.beginPath(); c.moveTo(-6, -5); c.lineTo(6, -5); c.lineTo(0, 7); c.closePath(); c.fill();
+      c.fillStyle = PAL.orange; c.beginPath(); c.moveTo(-4, -4); c.lineTo(4, -4); c.lineTo(0, 5); c.closePath(); c.fill();
+    } else if (p.kind === 'brown') {
+      // the brown note: wobbly low-frequency waves
+      c.strokeStyle = '#8a5a2b'; c.lineWidth = 2;
+      for (let k = 0; k < 3; k++) {
+        c.beginPath();
+        for (let a = -10; a <= 10; a += 2) {
+          const yy = a, xx = -k * 6 + Math.sin(a * 0.6 + t * 30 + k) * 2;
+          if (a === -10) c.moveTo(xx, yy); else c.lineTo(xx, yy);
+        }
+        c.stroke();
+      }
+    } else if (p.kind === 'djembe') {
+      c.strokeStyle = PAL.orange; c.lineWidth = 2;
+      c.beginPath(); c.ellipse(0, 0, 4 + p.t * 12, 8 + p.t * 16, 0, -1.2, 1.2); c.stroke();
+      c.fillStyle = '#8a4a1b'; c.fillRect(-4, -3, 6, 7); c.fillStyle = PAL.cream; c.fillRect(-4, -4, 6, 2);
     } else {
       // sax notes
       c.fillStyle = PAL.gold;
@@ -599,6 +631,19 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     for (const b of babs) {
       const sx = b.x - camX;
       if (sx < -40 || sx > W + 40) continue;
+      if (b.toilet >= 0) {
+        const k = b.toilet > 1.2 ? Math.max(0, 1 - (b.toilet - 1.2) / 0.4) : 1;
+        c.save();
+        c.translate(Math.round(sx), GROUND);
+        c.scale(k, k);
+        art.toiletBack(c, 0, 0);
+        const shake = Math.round(Math.sin(t * 60) * 1.5);
+        art.babushka(c, shake, -6, b.kind === 'big' ? 1.1 : 0.9, 0, 'hit', t);
+        art.toiletFront(c, 0, 0);
+        c.restore();
+        if (b.toilet > 0.5 && b.toilet < 1.2) text(T('plouf'), sx, GROUND - 52 - (b.toilet - 0.5) * 20, 9, '#c08a4a');
+        continue;
+      }
       if (b.dead && b.vx === 0 && b.vy === 0) continue;
       c.save();
       if (b.dead) { c.translate(Math.round(sx), Math.round(GROUND + b.dy - 20)); c.rotate(b.rot); c.translate(-Math.round(sx), -Math.round(GROUND - 20)); }
