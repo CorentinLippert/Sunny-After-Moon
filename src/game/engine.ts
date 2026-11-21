@@ -65,15 +65,32 @@ class Song {
     this.rate = rate;
     this.data = virtual ? Promise.resolve(new ArrayBuffer(0)) : fetch(url).then((r) => r.arrayBuffer());
   }
-  async unlock() {
-    if (this.virtual) return;
+  private loading: Promise<void> | null = null;
+  private ensureCtx() {
     if (!this.ctx) {
       this.ctx = new AudioContext();
       this.gain = this.ctx.createGain();
       this.gain.connect(this.ctx.destination);
+      if (this.muted) this.gain.gain.value = 0;
     }
-    if (this.ctx.state === 'suspended') await this.ctx.resume();
-    if (!this.buf) this.buf = await this.ctx.decodeAudioData((await this.data).slice(0));
+    return this.ctx;
+  }
+  // Must run inside a key/tap handler: browsers only let audio start from a user gesture.
+  wake() {
+    if (this.virtual) return;
+    const ctx = this.ensureCtx();
+    if (ctx.state !== 'running') ctx.resume().catch(() => {});
+  }
+  // Decoding works while the context is still suspended, so it can start right away.
+  load() {
+    if (this.virtual) return Promise.resolve();
+    if (!this.loading) {
+      const ctx = this.ensureCtx();
+      this.loading = this.data
+        .then((d) => ctx.decodeAudioData(d.slice(0)))
+        .then((b) => { this.buf = b; });
+    }
+    return this.loading;
   }
   play(from: number) {
     this.stop();
@@ -125,6 +142,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     fetch('/game/heads/heads.json').then((r) => r.json()),
   ]);
   const song = new Song(level.song.src, virtual, rate);
+  song.load().catch(() => {}); // start decoding the song while the title screen shows
   const sprites: Record<string, HTMLImageElement> = {};
   const heads: Record<string, HTMLImageElement> = {};
   await Promise.all(CHARS.map(async (ch) => {
@@ -149,6 +167,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     if ([...JUMP_KEYS, ...ACT_KEYS, 'ArrowLeft', 'ArrowRight', 'ArrowDown'].includes(code)) e.preventDefault();
     if (e.repeat) return;
     anyPressed = true;
+    song.wake();
     if (JUMP_KEYS.includes(code)) { keys.jump = true; jumpPressed = true; }
     if (ACT_KEYS.includes(code)) { keys.action = true; actionPressed = true; }
     if (code === 'ArrowLeft' || code === 'KeyA' || code === 'KeyQ') nav.left = true;
@@ -173,6 +192,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   canvas.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     anyPressed = true;
+    song.wake();
     const p = toCanvas(e);
     pointer = p;
     const side = p.x < W / 2 ? 'jump' : 'action';
@@ -681,7 +701,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   async function confirmChar() {
     char = CHARS[sel];
     mode = 'chosen'; modeT = 0;
-    try { await song.unlock(); } catch (e) { loadingErr = String(e); }
+    song.load().catch((e) => (loadingErr = String(e)));
   }
 
   function frame(now: number) {
@@ -694,7 +714,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
 
     if (mode === 'title') {
       drawTitle(clock);
-      if (anyPressed || autoplay) { mode = 'select'; modeT = 0; song.unlock().catch((e) => (loadingErr = String(e))); }
+      if (anyPressed || autoplay) { mode = 'select'; modeT = 0; song.load().catch((e) => (loadingErr = String(e))); }
     } else if (mode === 'select') {
       if (nav.left) sel = (sel + 7) % 8;
       if (nav.right) sel = (sel + 1) % 8;

@@ -176,6 +176,7 @@ export function sky(c: Ctx, W: number, H: number, p: number, camX: number, camY:
     ['#b8473a', '#6a2a3a', '#2a2a48'],
     ['#14324a', '#0f2a36', PAL.night],
   ];
+  p = Math.max(0, Math.min(1, p)); // the song clock can be slightly negative right after it starts
   const f = Math.min(stops.length - 1.001, p * (stops.length - 1));
   const i = Math.floor(f), t = f - i;
   const g = c.createLinearGradient(0, 0, 0, H);
