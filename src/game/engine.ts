@@ -638,7 +638,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
         c.scale(k, k);
         art.toiletBack(c, 0, 0);
         const shake = Math.round(Math.sin(t * 60) * 1.5);
-        art.babushka(c, shake, -6, b.kind === 'big' ? 1.1 : 0.9, 0, 'hit', t);
+        art.babushka(c, shake - 2, -10, b.kind === 'big' ? 1.1 : 0.9, 0, 'hit', t);
         art.toiletFront(c, 0, 0);
         c.restore();
         if (b.toilet > 0.5 && b.toilet < 1.2) text(T('plouf'), sx, GROUND - 52 - (b.toilet - 0.5) * 20, 9, '#c08a4a');

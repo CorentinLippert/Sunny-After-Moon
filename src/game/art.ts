@@ -261,26 +261,54 @@ export function heart(c: Ctx, x: number, y: number, full: boolean) {
       }
 }
 
-// --- A cartoon toilet, for babushkas hit by the brown note (tank behind her, bowl in front) ---
+// --- A cartoon toilet seen from the side, for babushkas hit by the brown note.
+// Tank behind her back (right), seat and bowl in profile in front of her legs.
 export function toiletBack(c: Ctx, x: number, footY: number) {
   const X = Math.round(x), Y = Math.round(footY);
   c.fillStyle = PAL.ink;
-  c.fillRect(X - 13, Y - 44, 26, 34);
+  c.fillRect(X + 7, Y - 42, 11, 30); // tank outline
+  c.fillRect(X + 5, Y - 44, 15, 4); // lid outline
   c.fillStyle = '#ffffff';
-  c.fillRect(X - 12, Y - 43, 24, 32);
+  c.fillRect(X + 8, Y - 41, 9, 28);
+  c.fillRect(X + 6, Y - 43, 13, 2);
   c.fillStyle = '#cfd8dc';
-  c.fillRect(X - 12, Y - 43, 24, 4);
+  c.fillRect(X + 14, Y - 41, 3, 28); // shade
   c.fillStyle = PAL.gold;
-  c.fillRect(X + 7, Y - 38, 4, 2); // flush handle
+  c.fillRect(X + 4, Y - 37, 4, 2); // flush lever
+  // open lid standing up against the tank
+  c.fillStyle = PAL.ink;
+  c.fillRect(X + 3, Y - 34, 5, 22);
+  c.fillStyle = '#ffffff';
+  c.fillRect(X + 4, Y - 33, 3, 20);
 }
 export function toiletFront(c: Ctx, x: number, footY: number) {
   const X = Math.round(x), Y = Math.round(footY);
+  // bowl in profile: wide rim, curving in to a narrow foot
   c.fillStyle = PAL.ink;
-  c.fillRect(X - 15, Y - 14, 30, 6);
-  c.fillRect(X - 9, Y - 9, 18, 9);
+  c.beginPath();
+  c.moveTo(X - 15, Y - 15);
+  c.lineTo(X + 10, Y - 15);
+  c.lineTo(X + 10, Y - 10);
+  c.quadraticCurveTo(X + 8, Y - 4, X + 5, Y - 3);
+  c.lineTo(X + 6, Y);
+  c.lineTo(X - 6, Y);
+  c.lineTo(X - 5, Y - 3);
+  c.quadraticCurveTo(X - 14, Y - 6, X - 15, Y - 11);
+  c.closePath();
+  c.fill();
   c.fillStyle = '#ffffff';
-  c.fillRect(X - 14, Y - 13, 28, 4);
-  c.fillRect(X - 8, Y - 8, 16, 8);
+  c.beginPath();
+  c.moveTo(X - 14, Y - 14);
+  c.lineTo(X + 9, Y - 14);
+  c.lineTo(X + 9, Y - 10);
+  c.quadraticCurveTo(X + 7, Y - 5, X + 4, Y - 4);
+  c.lineTo(X + 5, Y - 1);
+  c.lineTo(X - 5, Y - 1);
+  c.lineTo(X - 4, Y - 4);
+  c.quadraticCurveTo(X - 13, Y - 7, X - 14, Y - 11);
+  c.closePath();
+  c.fill();
   c.fillStyle = '#cfd8dc';
-  c.fillRect(X - 8, Y - 3, 16, 3);
+  c.fillRect(X - 14, Y - 12, 23, 1); // seat line
+  c.fillRect(X - 3, Y - 4, 6, 3);
 }
