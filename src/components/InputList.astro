@@ -4,7 +4,7 @@ import type { TechDict } from '../i18n/tech';
 
 interface Props { t: TechDict; compact?: boolean }
 const { t, compact = false } = Astro.props;
-const marks = { secondSnare: '*', clipOn: '†', ownDi: '‡', shared: '§' } as const;
+const marks = { secondSnare: '*', clipOn: '†', ownDi: '‡', bassChoice: '§' } as const;
 const used = [...new Set(channels.flatMap((c) => (c.note ? [c.note] : [])))];
 const cell = compact ? 'px-2 py-[5px]' : 'px-3 py-2';
 ---

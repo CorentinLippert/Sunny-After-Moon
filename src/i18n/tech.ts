@@ -23,7 +23,7 @@ const en = {
     secondSnare: 'Wim plays two snare drums.',
     clipOn: 'Corentin brings his own clip-on mic and only needs an XLR line.',
     ownDi: 'Stereo, two XLR lines.',
-    shared: 'One mic shared between keys and guitar.',
+    bassChoice: 'Bass: DI or a mic on the amp, Simon confirms before the show.',
   },
   monitorsTitle: 'Monitors',
   monitorsText: '6 wedges on 6 separate mixes: 3 upstage, 3 downstage.',
@@ -39,16 +39,16 @@ const en = {
   roles: {
     yorick: 'Lead vocals & djembe',
     sam: 'Guitar & lead vocals',
-    corentin: 'Sax, acoustic guitar & lead vocals',
+    corentin: 'Sax & lead vocals',
     wim: 'Drums',
     simon: 'Bass',
-    hans: 'Guitar & backing vocals',
+    hans: 'Guitar',
     tijl: 'Keys & backing vocals',
     tomas: 'Percussion & FX',
   },
   plan: {
     fx: 'FX', perc: 'Percussion', bassAmp: 'Bass amp', drums: 'Drums', gtrAmp: 'Guitar amp',
-    keys: 'Keys', bass: 'Bass', guitar: 'Guitar', sax: 'Sax + acoustic', djembe: 'Djembe', vox: 'Vox',
+    keys: 'Keys', bass: 'Bass', guitar: 'Guitar', sax: 'Sax', djembe: 'Djembe', vox: 'Vox',
   },
 };
 
@@ -76,7 +76,7 @@ const nl: TechDict = {
     secondSnare: 'Wim speelt met twee snaredrums.',
     clipOn: 'Corentin brengt zijn eigen clip-on micro mee en heeft enkel een XLR-lijn nodig.',
     ownDi: 'Stereo, twee XLR-lijnen.',
-    shared: 'Eén micro gedeeld door keys en gitaar.',
+    bassChoice: 'Bas: DI of een micro op de versterker, Simon bevestigt dit vooraf.',
   },
   monitorsTitle: 'Monitors',
   monitorsText: '6 wedges op 6 aparte mixen: 3 achteraan, 3 vooraan.',
@@ -92,16 +92,16 @@ const nl: TechDict = {
   roles: {
     yorick: 'Leadzang & djembé',
     sam: 'Gitaar & leadzang',
-    corentin: 'Sax, akoestische gitaar & leadzang',
+    corentin: 'Sax & leadzang',
     wim: 'Drums',
     simon: 'Bas',
-    hans: 'Gitaar & backing vocals',
+    hans: 'Gitaar',
     tijl: 'Keys & backing vocals',
     tomas: 'Percussie & FX',
   },
   plan: {
     fx: 'FX', perc: 'Percussie', bassAmp: 'Basversterker', drums: 'Drums', gtrAmp: 'Gitaarversterker',
-    keys: 'Keys', bass: 'Bas', guitar: 'Gitaar', sax: 'Sax + akoestisch', djembe: 'Djembé', vox: 'Zang',
+    keys: 'Keys', bass: 'Bas', guitar: 'Gitaar', sax: 'Sax', djembe: 'Djembé', vox: 'Zang',
   },
 };
 
@@ -127,7 +127,7 @@ const fr: TechDict = {
     secondSnare: 'Wim joue avec deux caisses claires.',
     clipOn: 'Corentin apporte son propre micro clip et a seulement besoin d’une ligne XLR.',
     ownDi: 'Stéréo, deux lignes XLR.',
-    shared: 'Un micro partagé entre claviers et guitare.',
+    bassChoice: 'Basse : DI ou micro sur l’ampli, Simon confirme avant le concert.',
   },
   monitorsTitle: 'Retours',
   monitorsText: '6 wedges sur 6 mix séparés : 3 au fond, 3 devant.',
@@ -143,16 +143,16 @@ const fr: TechDict = {
   roles: {
     yorick: 'Chant lead & djembé',
     sam: 'Guitare & chant lead',
-    corentin: 'Sax, guitare acoustique & chant lead',
+    corentin: 'Sax & chant lead',
     wim: 'Batterie',
     simon: 'Basse',
-    hans: 'Guitare & chœurs',
+    hans: 'Guitare',
     tijl: 'Claviers & chœurs',
     tomas: 'Percussions & FX',
   },
   plan: {
     fx: 'FX', perc: 'Percussions', bassAmp: 'Ampli basse', drums: 'Batterie', gtrAmp: 'Ampli guitare',
-    keys: 'Claviers', bass: 'Basse', guitar: 'Guitare', sax: 'Sax + acoustique', djembe: 'Djembé', vox: 'Chant',
+    keys: 'Claviers', bass: 'Basse', guitar: 'Guitare', sax: 'Sax', djembe: 'Djembé', vox: 'Chant',
   },
 };
 

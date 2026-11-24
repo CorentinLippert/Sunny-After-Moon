@@ -11,7 +11,7 @@ export interface Channel {
   mic: string;
   stand: Stand;
   /** key in the tech dictionary for an extra note */
-  note?: 'secondSnare' | 'clipOn' | 'ownDi' | 'shared';
+  note?: 'secondSnare' | 'clipOn' | 'ownDi' | 'bassChoice';
 }
 
 export const channels: Channel[] = [
@@ -24,24 +24,22 @@ export const channels: Channel[] = [
   { n: 7, source: 'Floor tom', who: 'Wim', mic: 'e904 / PG56', stand: 'clamp' },
   { n: 8, source: 'OH L', who: 'Wim', mic: 'e614 / P170', stand: 'tall' },
   { n: 9, source: 'OH R', who: 'Wim', mic: 'e614 / P170', stand: 'tall' },
-  { n: 10, source: 'Bass DI', who: 'Simon', mic: 'DI', stand: 'none' },
-  { n: 11, source: 'Bass amp', who: 'Simon', mic: 'AKG D112 / Beta 52', stand: 'short' },
-  { n: 12, source: 'Guitar (front)', who: 'Sam', mic: 'e906 / SM57', stand: 'short' },
-  { n: 13, source: 'Guitar (back)', who: 'Hans', mic: 'e906 / SM57', stand: 'short' },
-  { n: 14, source: 'Keys L', who: 'Tijl', mic: 'DI', stand: 'none' },
-  { n: 15, source: 'Keys R', who: 'Tijl', mic: 'DI', stand: 'none' },
-  { n: 16, source: 'Sax', who: 'Corentin', mic: 'XLR (clip-on) · alt. C1000 / SM57', stand: 'none', note: 'clipOn' },
-  { n: 17, source: 'Acoustic guitar', who: 'Corentin', mic: 'DI (jack)', stand: 'none' },
-  { n: 18, source: 'Percussion L', who: 'Tomas', mic: 'e614 / P170 · alt. SM57', stand: 'tall' },
-  { n: 19, source: 'Percussion R', who: 'Tomas', mic: 'e614 / P170 · alt. SM57', stand: 'tall' },
-  { n: 20, source: 'Kaossilator L', who: 'Tomas', mic: 'DI (XLR)', stand: 'none', note: 'ownDi' },
-  { n: 21, source: 'Kaossilator R', who: 'Tomas', mic: 'DI (XLR)', stand: 'none', note: 'ownDi' },
-  { n: 22, source: 'Space Echo (snare)', who: 'Tomas', mic: 'DI (jack)', stand: 'none' },
-  { n: 23, source: 'Djembe', who: 'Yorick', mic: 'SM57', stand: 'short' },
-  { n: 24, source: 'Vocals 1 (lead)', who: 'Yorick', mic: 'SM58', stand: 'tall' },
-  { n: 25, source: 'Vocals 2 (lead)', who: 'Sam', mic: 'SM58', stand: 'tall' },
-  { n: 26, source: 'Vocals 3 (lead)', who: 'Corentin', mic: 'SM58', stand: 'tall' },
-  { n: 27, source: 'Vocals 4 (backing)', who: 'Tijl & Hans', mic: 'SM58', stand: 'tall', note: 'shared' },
+  { n: 10, source: 'Bass', who: 'Simon', mic: 'DI or AKG D112 / Beta 52 on amp', stand: 'short', note: 'bassChoice' },
+  { n: 11, source: 'Guitar (front)', who: 'Sam', mic: 'e906 / SM57', stand: 'short' },
+  { n: 12, source: 'Guitar (back)', who: 'Hans', mic: 'e906 / SM57', stand: 'short' },
+  { n: 13, source: 'Keys L', who: 'Tijl', mic: 'DI', stand: 'none' },
+  { n: 14, source: 'Keys R', who: 'Tijl', mic: 'DI', stand: 'none' },
+  { n: 15, source: 'Sax', who: 'Corentin', mic: 'XLR (clip-on) · alt. C1000 / SM57', stand: 'none', note: 'clipOn' },
+  { n: 16, source: 'Percussion L', who: 'Tomas', mic: 'e614 / P170 · alt. SM57', stand: 'tall' },
+  { n: 17, source: 'Percussion R', who: 'Tomas', mic: 'e614 / P170 · alt. SM57', stand: 'tall' },
+  { n: 18, source: 'Kaossilator L', who: 'Tomas', mic: 'DI (XLR)', stand: 'none', note: 'ownDi' },
+  { n: 19, source: 'Kaossilator R', who: 'Tomas', mic: 'DI (XLR)', stand: 'none', note: 'ownDi' },
+  { n: 20, source: 'Space Echo (snare)', who: 'Tomas', mic: 'DI (jack)', stand: 'none' },
+  { n: 21, source: 'Djembe', who: 'Yorick', mic: 'SM57', stand: 'short' },
+  { n: 22, source: 'Vocals 1 (lead)', who: 'Yorick', mic: 'SM58', stand: 'tall' },
+  { n: 23, source: 'Vocals 2 (lead)', who: 'Sam', mic: 'SM58', stand: 'tall' },
+  { n: 24, source: 'Vocals 3 (lead)', who: 'Corentin', mic: 'SM58', stand: 'tall' },
+  { n: 25, source: 'Vocals 4 (backing)', who: 'Tijl', mic: 'SM58', stand: 'tall' },
 ];
 
 /** Line-up as it stands on stage, with the role key from the tech dictionary. */
