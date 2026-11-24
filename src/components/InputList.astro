@@ -1,0 +1,37 @@
+---
+import { channels } from '../data/tech';
+import type { TechDict } from '../i18n/tech';
+
+interface Props { t: TechDict; compact?: boolean }
+const { t, compact = false } = Astro.props;
+const marks = { secondSnare: '*', clipOn: '†', ownDi: '‡', shared: '§' } as const;
+const used = [...new Set(channels.flatMap((c) => (c.note ? [c.note] : [])))];
+const cell = compact ? 'px-2 py-[5px]' : 'px-3 py-2';
+---
+<div class="overflow-x-auto">
+  <table class:list={['w-full border-collapse text-left', compact ? 'text-[12px] leading-tight' : 'text-sm sm:text-base']}>
+    <thead>
+      <tr class="bg-ink text-bg">
+        <th class:list={[cell, 'w-10']}>{t.ch}</th>
+        <th class={cell}>{t.source}</th>
+        <th class={cell}>{t.who}</th>
+        <th class={cell}>{t.mic}</th>
+        <th class={cell}>{t.stand}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {channels.map((c, i) => (
+        <tr class:list={['border-b border-ink/20', i % 2 ? 'bg-gold/10' : '']}>
+          <td class:list={[cell, 'font-display text-sun dark:text-gold']}>{c.n}</td>
+          <td class:list={[cell, 'font-bold']}>{c.source}{c.note && <sup class="ml-0.5">{marks[c.note]}</sup>}</td>
+          <td class={cell}>{c.who}</td>
+          <td class={cell}>{c.mic}</td>
+          <td class:list={[cell, 'whitespace-nowrap']}>{t.stands[c.stand]}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+<ul class:list={['mt-3 space-y-0.5', compact ? 'px-2 text-[11px]' : 'px-4 text-sm']}>
+  {used.map((n) => <li><span class="font-bold">{marks[n]}</span> {t.notes[n]}</li>)}
+</ul>
