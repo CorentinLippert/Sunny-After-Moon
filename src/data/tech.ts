@@ -29,7 +29,7 @@ export const channels: Channel[] = [
   { n: 12, source: 'Guitar (back)', who: 'Hans', mic: 'e906 / SM57', stand: 'short' },
   { n: 13, source: 'Keys L', who: 'Tijl', mic: 'DI', stand: 'none' },
   { n: 14, source: 'Keys R', who: 'Tijl', mic: 'DI', stand: 'none' },
-  { n: 15, source: 'Sax', who: 'Corentin', mic: 'XLR (clip-on) · alt. C1000 / SM57', stand: 'none', note: 'clipOn' },
+  { n: 15, source: 'Sax', who: 'Corentin', mic: 'Clip-on · alt. C1000 / SM57', stand: 'tall', note: 'clipOn' },
   { n: 16, source: 'Percussion L', who: 'Tomas', mic: 'e614 / P170 · alt. SM57', stand: 'tall' },
   { n: 17, source: 'Percussion R', who: 'Tomas', mic: 'e614 / P170 · alt. SM57', stand: 'tall' },
   { n: 18, source: 'Kaossilator L', who: 'Tomas', mic: 'DI (XLR)', stand: 'none', note: 'ownDi' },

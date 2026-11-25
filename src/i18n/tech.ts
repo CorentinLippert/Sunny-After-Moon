@@ -21,7 +21,7 @@ const en = {
   stands: { short: 'short boom', tall: 'tall boom', clamp: 'clamp', none: '–' },
   notes: {
     secondSnare: 'Wim plays two snare drums.',
-    clipOn: 'Corentin brings his own clip-on mic and only needs an XLR line.',
+    clipOn: 'Please provide a sax mic: a clip-on if possible, otherwise a mic on a tall stand.',
     ownDi: 'Stereo, two XLR lines.',
     bassChoice: 'Bass: DI or a mic on the amp, Simon confirms before the show.',
   },
@@ -74,7 +74,7 @@ const nl: TechDict = {
   stands: { short: 'kort statief', tall: 'hoog statief', clamp: 'clamp', none: '–' },
   notes: {
     secondSnare: 'Wim speelt met twee snaredrums.',
-    clipOn: 'Corentin brengt zijn eigen clip-on micro mee en heeft enkel een XLR-lijn nodig.',
+    clipOn: 'Graag een saxmicro voorzien: liefst een clip-on, anders een micro op een hoog statief.',
     ownDi: 'Stereo, twee XLR-lijnen.',
     bassChoice: 'Bas: DI of een micro op de versterker, Simon bevestigt dit vooraf.',
   },
@@ -125,7 +125,7 @@ const fr: TechDict = {
   stands: { short: 'petit pied', tall: 'grand pied', clamp: 'pince', none: '–' },
   notes: {
     secondSnare: 'Wim joue avec deux caisses claires.',
-    clipOn: 'Corentin apporte son propre micro clip et a seulement besoin d’une ligne XLR.',
+    clipOn: 'Merci de prévoir un micro pour le sax : un clip si possible, sinon un micro sur grand pied.',
     ownDi: 'Stéréo, deux lignes XLR.',
     bassChoice: 'Basse : DI ou micro sur l’ampli, Simon confirme avant le concert.',
   },
