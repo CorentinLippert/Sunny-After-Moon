@@ -174,8 +174,7 @@ const fr: Dict = {
 
 // Level menu + level 2 (Adulthood, the stage puzzle)
 const stEn = {
-  'st.buildUp': 'Set up the whole stage. The keys go last: then the song starts!',
-  'st.keysLast': 'Keys go last: first set up the rest',
+  'st.loopMsg': 'The piano loops until the whole band stands: set up the rest!',
   'poster.tag': '8 musicians. 1 stage. Zero soundcheck.',
   'poster.billing': 'Two levels: BALKAN BOOBY and ADULTHOOD · Now playing on sunnyaftermoon.com',
   'menu.choose': 'Choose a level',
@@ -185,7 +184,7 @@ const stEn = {
   'st.subtitle': 'Set up the stage, then get the crowd going',
   'st.rule1': 'Tap a musician, then his instrument on the pile, then his spot.',
   'st.rule2': 'Everyone carries only his own instrument. Only the top of the pile comes off.',
-  'st.rule3': 'The keys (Tijl) go last: when they stand, the song starts.',
+  'st.rule3': 'Tijl and his keys come first. The piano loops until everyone stands, then the song plays on.',
   'st.rule4': 'Then: tap the musician in the circle on the beat. Spotlight, party!',
   'st.start': 'Tap or press Space to start the soundcheck',
   'st.help1': 'Tap a musician (or keys 1-8), then the pile (P) or the side table (Z)',
@@ -236,8 +235,7 @@ const stEn = {
 };
 type StDict = typeof stEn;
 const stNl: StDict = {
-  'st.buildUp': 'Stel het hele podium op. De keys komen als laatste: dan start het liedje!',
-  'st.keysLast': 'De keys komen als laatste: eerst de rest',
+  'st.loopMsg': 'De pianoloop speelt tot de hele band staat: zet de rest klaar!',
   'poster.tag': '8 muzikanten. 1 podium. Geen soundcheck.',
   'poster.billing': 'Twee levels: BALKAN BOOBY en ADULTHOOD · Nu te spelen op sunnyaftermoon.com',
   'menu.choose': 'Kies een level',
@@ -247,7 +245,7 @@ const stNl: StDict = {
   'st.subtitle': 'Zet het podium klaar en krijg het publiek los',
   'st.rule1': 'Tik een muzikant, dan zijn instrument op de stapel, dan zijn plek.',
   'st.rule2': 'Iedereen draagt alleen zijn eigen instrument. Alleen het bovenste kan eraf.',
-  'st.rule3': 'De keys (Tijl) komen als laatste: als die staan, start het liedje.',
+  'st.rule3': 'Tijl en zijn keys eerst. De piano loopt tot iedereen staat, dan gaat het liedje verder.',
   'st.rule4': 'Daarna: tik op de maat de muzikant in de cirkel. Spotlight, feest!',
   'st.start': 'Tik of druk op spatie om de soundcheck te starten',
   'st.help1': 'Tik een muzikant (of toets 1-8), dan de stapel (P) of de zijtafel (Z)',
@@ -297,8 +295,7 @@ const stNl: StDict = {
   'anim.stagedive': 'STAGEDIVE!', 'anim.moshpit': 'MOSHPIT!', 'anim.skydive': 'SKYDIVE!',
 };
 const stFr: StDict = {
-  'st.buildUp': 'Installe toute la scène. Le clavier en dernier : alors la chanson commence !',
-  'st.keysLast': "Le clavier en dernier : d'abord le reste",
+  'st.loopMsg': 'Le piano tourne en boucle tant que le groupe n’est pas installé : installe le reste !',
   'poster.tag': '8 musiciens. 1 scène. Zéro balance.',
   'poster.billing': 'Deux niveaux : BALKAN BOOBY et ADULTHOOD · À jouer sur sunnyaftermoon.com',
   'menu.choose': 'Choisis un niveau',
@@ -308,7 +305,7 @@ const stFr: StDict = {
   'st.subtitle': 'Installe la scène, puis fais bouger le public',
   'st.rule1': 'Touche un musicien, puis son instrument sur la pile, puis sa place.',
   'st.rule2': 'Chacun ne porte que son propre instrument. Seul le dessus de la pile se prend.',
-  'st.rule3': 'Le clavier (Tijl) en dernier : quand il est installé, la chanson commence.',
+  'st.rule3': 'Tijl et son clavier d’abord. Le piano tourne en boucle jusqu’à ce que tout le monde soit installé.',
   'st.rule4': 'Ensuite : touche le musicien dans le cercle, sur le temps. Projecteur, fête !',
   'st.start': 'Touche ou appuie sur Espace pour lancer la balance',
   'st.help1': 'Touche un musicien (ou 1-8), puis la pile (P) ou la table (Z)',

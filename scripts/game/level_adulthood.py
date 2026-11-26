@@ -1,4 +1,4 @@
-"""Level 2, "Adulthood": stage set-up puzzle (keys last, then the song starts), then spotlight moments.
+"""Level 2, "Adulthood": stage set-up puzzle (keys first, piano loop until the band stands), then spotlight moments.
 
 Input: the six Demucs stems (htdemucs_6s) of the master and the beat grid.
   python3 scripts/game/level_adulthood.py <stems dir> <beats.json> > public/game/levels/adulthood.json
@@ -30,6 +30,9 @@ BIG = [  # (time, musician, animation): the big moments of the song
     (262.0, 'wim', 'skydive'),
 ]
 DISASTERS = [(96.0, 'cable'), (132.0, 'fan'), (186.0, 'cable'), (208.0, 'fan')]
+# the piano intro is a 2-bar pattern; this 4-bar loop (downbeat to the downbeat before the percussion) plays
+# until the whole band stands (Monia 2026-11-26)
+LOOP = (4.551, 11.981)
 SMALL_ANIMS = ['jump', 'spin', 'headbang', 'slide', 'levitate', 'wiggle']
 
 
@@ -58,7 +61,7 @@ def main():
     cues, last, rr = [], None, {n: 0 for n in STEMS}
     bar = 4 * 60 / bpm
     beat = 60 / bpm
-    t = 3.0
+    t = LOOP[1] + 0.3  # cues start once the piano loop lets go and the whole band plays
     big_t = [b[0] for b in BIG]
     rng = np.random.default_rng(7)
     loud = np.mean([rel[n] for n in STEMS], axis=0)
@@ -81,8 +84,9 @@ def main():
         if any(abs(tb - b) < bar * 1.5 for b in big_t):
             t += bar; continue
         s = slice(int(tb / HOP), int((tb + bar) / HOP))
-        burst = nbar % 3 == 2 and loud[s].mean() > loud_thr
-        n_cues = 3 if burst else 1
+        # crazier and faster (Monia 2026-11-26): bursts every other bar in loud parts, sometimes four in a row
+        burst = nbar % 2 == 1 and loud[s].mean() > loud_thr
+        n_cues = (4 if nbar % 8 == 7 else 3) if burst else 1
         avoid = [last]
         for k in range(n_cues):
             ck = snap(tb + k * beat)
@@ -107,6 +111,7 @@ def main():
         'cues': cues,
         'disasters': disasters,
         # "magic and wonder" statement on the backdrop (first sung at 0:42, Monia 2026-11-26)
+        'loop': list(LOOP),
         'statement': {'t': 42.0, 'text': 'MAGIC AND WONDER'},
     }
     json.dump(level, sys.stdout, separators=(',', ':'))
