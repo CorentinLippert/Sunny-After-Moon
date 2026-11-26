@@ -10,36 +10,43 @@
   --color-ink: var(--ink);
   --color-card: var(--card);
   --color-muted: var(--muted);
-  --color-sun: #ff7a3d;
-  --color-gold: #ffc23d;
-  --color-coral: #ff5d73;
-  --color-sky: #5ec4e8;
-  --color-night: #1a1440;
+  /* Palette taken from the official logo */
+  --color-sun: #ce460a;     /* letters orange */
+  --color-gold: #fcc400;    /* inner sun */
+  --color-yellow: #ffec00;  /* outer ring */
+  --color-teal: #6cbc92;    /* sky band */
+  --color-lime: #b2cc3c;    /* outlines */
+  --color-maroon: #96261b;  /* MOON letters */
+  --color-coral: var(--color-lime);
+  --color-sky: var(--color-teal);
+  --color-night: #0f2a26;
 }
 
 :root {
-  --bg: #fff4e0;
-  --ink: #2b1d3a;
+  --bg: #fff7dc;
+  --ink: #3a140c;
   --card: #ffffff;
-  --muted: #6b5a73;
-  --sky-top: #ffd36e;
-  --sky-mid: #ff9a5a;
-  --sky-bottom: #ff6f7d;
-  --orb: #ffe680;
-  --orb-glow: rgba(255, 214, 102, 0.55);
+  --muted: #7a4a33;
+  --sky-top: #ffec00;
+  --sky-mid: #fcc400;
+  --sky-bottom: #f08a2c;
+  --orb: #6cbc92;
+  --orb-glow: rgba(255, 236, 0, 0.6);
+  --disc: #6cbc92;
   color-scheme: light;
 }
 
 [data-theme='night'] {
-  --bg: #120d2e;
+  --bg: #0e211e;
   --ink: #fdf3e1;
-  --card: #1e1747;
-  --muted: #b7aed6;
-  --sky-top: #0b0824;
-  --sky-mid: #231a5c;
-  --sky-bottom: #4b2a7a;
-  --orb: #eeeaff;
-  --orb-glow: rgba(200, 190, 255, 0.35);
+  --card: #163430;
+  --muted: #a9cbbd;
+  --sky-top: #061310;
+  --sky-mid: #0f3a33;
+  --sky-bottom: #6a2216;
+  --orb: #fbf3cf;
+  --orb-glow: rgba(252, 196, 0, 0.22);
+  --disc: #96261b;
   color-scheme: dark;
 }
 
@@ -104,6 +111,13 @@ h1, h2, h3, .font-display {
   transition: transform 0.7s ease, background 0.6s ease;
 }
 [data-theme='night'] .orb-bite { transform: translate(35%, -20%); }
+
+/* Band photo: real photo by day, the illustrated version by night */
+.band-disc { background: var(--disc); transition: background 0.6s ease; }
+.band-night { opacity: 0; }
+[data-theme='night'] .band-day { opacity: 0; }
+[data-theme='night'] .band-night { opacity: 1; }
+.band-day, .band-night { transition: opacity 0.6s ease; }
 
 .stars { opacity: 0; transition: opacity 0.6s ease; }
 [data-theme='night'] .stars { opacity: 1; }

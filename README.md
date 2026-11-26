@@ -19,6 +19,7 @@ npm run build    # static site in dist/
 | Gigs | `src/content/gigs/` — one `.md` file per gig (see below) |
 | Members, albums, links | `src/data/band.ts` |
 | All texts in EN / NL / FR | `src/i18n/ui.ts` |
+| Tech rider (inputs, monitors, power) | `src/data/tech.ts`, texts in `src/i18n/tech.ts`, stage plan in `src/components/StagePlan.astro` |
 | Colours and fonts | `src/styles/global.css` |
 
 ### Add a gig
@@ -45,3 +46,11 @@ Gigs move from "Upcoming" to "Past gigs" when the site is rebuilt after the date
 - Real photos, album covers and member drawings (placeholders for now)
 - Press kit downloads
 - The rhythm mini game at `/play/`
+
+### Update the tech rider PDFs
+
+The page `/tech/` reads `src/data/tech.ts`. The downloadable PDFs in `public/downloads/` are printed from the A4 page `/tech/sheet/`. After a change, run:
+
+```sh
+npm run build && npm run rider:pdf   # needs Playwright + Chromium (npx playwright install chromium)
+```

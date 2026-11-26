@@ -7,7 +7,7 @@ export const links = {
   facebook: 'https://www.facebook.com/sunnyaftermoon/',
   youtube: 'https://www.youtube.com/channel/UC5ghtEDXX_WP8H4SjOMR8Xw',
   vibe: 'https://vi.be/platform/sunnyaftermoon',
-  email: 'sunnyaftermoon@outlook.com',
+  email: 'sunnyaftermoonband@gmail.com',
 };
 
 export const spotifyEmbed = 'https://open.spotify.com/embed/artist/1yGE90VdkyNc89dT02jpP0?utm_source=generator&theme=0';
@@ -20,17 +20,19 @@ export interface Member {
   name: string;
   instrument: Instrument;
   color: string; // card colour, also used later for the game character
+  head?: string; // rotating-head animation in public/images/heads/<head>.webp (+ <head>-still.webp)
 }
 
 export const members: Member[] = [
-  { name: 'Yorick Musschoot', instrument: 'vocals', color: '#ff7a3d' },
-  { name: 'Corentin Lippert', instrument: 'sax', color: '#ffc23d' },
-  { name: 'Tijl Lippert', instrument: 'keys', color: '#ff5d73' },
-  { name: 'Sam De Wandel', instrument: 'guitar1', color: '#7bd389' },
-  { name: 'Hans De Roey', instrument: 'guitar2', color: '#5ec4e8' },
-  { name: 'Simon Fonteyn', instrument: 'bass', color: '#a98bff' },
-  { name: 'Wim Smeyers', instrument: 'drums', color: '#ff9f1c' },
-  { name: 'Tomas Boulanger', instrument: 'percussion', color: '#2ec4b6' },
+  // stage-plan order (Monia, 2026-11-13); warm and cool colours alternate like a checkerboard (4 per row)
+  { name: 'Sam De Wandel', instrument: 'guitar1', color: '#ffec00', head: 'sam' },
+  { name: 'Yorick Musschoot', instrument: 'vocals', color: '#6cbc92', head: 'yorick' },
+  { name: 'Corentin Lippert', instrument: 'sax', color: '#fcc400', head: 'corentin' },
+  { name: 'Hans De Roey', instrument: 'guitar2', color: '#4fa37e', head: 'hans' },
+  { name: 'Tijl Lippert', instrument: 'keys', color: '#3f8f86', head: 'tijl' },
+  { name: 'Wim Smeyers', instrument: 'drums', color: '#e2622a', head: 'wim' },
+  { name: 'Simon Fonteyn', instrument: 'bass', color: '#b2cc3c', head: 'simon' },
+  { name: 'Tomas Boulanger', instrument: 'percussion', color: '#f39a1e', head: 'tomas' },
 ];
 
 export interface Album {
@@ -46,13 +48,13 @@ export const albums: Album[] = [
     title: 'For the People',
     year: 2024,
     url: 'https://sunnyaftermoon.bandcamp.com/',
-    colors: ['#ff7a3d', '#2b1d5c'],
+    colors: ['#ce460a', '#96261b'],
   },
   {
     title: 'Where do we go from here?',
     year: 2019,
     url: 'https://sunnyaftermoon.bandcamp.com/',
-    colors: ['#5ec4e8', '#1a1440'],
+    colors: ['#6cbc92', '#0f2a26'],
   },
   {
     title: 'The Mental Mess',
@@ -62,6 +64,6 @@ export const albums: Album[] = [
       'Never Fear', 'Think4Free', 'Another Way', 'Balkan Booby', 'Mental Mess', 'Petit Agneau',
       'Levensgenieter', 'Discorientation', 'Cup Up', 'Ska #', 'Sure&Sure',
     ],
-    colors: ['#ffc23d', '#ff5d73'],
+    colors: ['#fcc400', '#ce460a'],
   },
 ];

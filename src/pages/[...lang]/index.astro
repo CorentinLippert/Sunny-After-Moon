@@ -4,6 +4,7 @@ import Hero from '../../components/Hero.astro';
 import AlbumCard from '../../components/AlbumCard.astro';
 import MemberCard from '../../components/MemberCard.astro';
 import GigList from '../../components/GigList.astro';
+import BandPhoto from '../../components/BandPhoto.astro';
 import { albums, members, spotifyEmbed, youtubeEmbed } from '../../data/band';
 import { getGigs } from '../../data/gigs';
 import { langPaths, localePath, useT, type Lang } from '../../i18n/ui';
@@ -49,6 +50,7 @@ const shownGigs = upcoming.length ? upcoming.slice(0, 3) : past.slice(0, 3);
       </div>
       <a class="btn bg-card !text-ink !py-1.5 !text-base" href={localePath(lang, '/band/')}>{t('nav.band')} →</a>
     </div>
+    <BandPhoto alt={t('band.photoAlt')} class="mb-10" />
     <div class="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-4">
       {members.map((m, i) => <MemberCard member={m} lang={lang} index={i} />)}
     </div>
