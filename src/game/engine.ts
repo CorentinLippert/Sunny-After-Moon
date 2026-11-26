@@ -220,11 +220,11 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   canvas.addEventListener('pointercancel', up);
 
   // ---------------- state ----------------
-  type Mode = 'title' | 'menu' | 'name' | 'select' | 'chosen' | 'loading' | 'play' | 'dead' | 'paused' | 'win' | 'board' | 'stage';
+  type Mode = 'title' | 'menu' | 'name' | 'select' | 'chosen' | 'loading' | 'play' | 'dead' | 'paused' | 'win' | 'board' | 'stage' | 'menuboard';
   let mode: Mode = 'title';
   let modeT = 0;
   let sel = 0;
-  let levelSel = 0;
+  let levelSel = 0, lastLevel = 0; // 0 Balkan Booby, 1 Adulthood, 2 leaderboard button
   let char = CHARS[0];
   let loadingErr = '';
 
@@ -860,7 +860,42 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
       text(i ? 'Adulthood' : 'Balkan Booby', x, y - 50, 15, on ? PAL.cream : PAL.cream);
       text(T(i ? 'menu.stage' : 'menu.runner'), x, y + 72, 9, PAL.cream);
     });
-    text(T('menu.hint'), W / 2, H - 14, 10, PAL.cream);
+    // leaderboard button under the two levels
+    const on = levelSel === 2;
+    c.fillStyle = on ? PAL.yellow : 'rgba(255,243,196,0.4)'; c.fillRect(W / 2 - 72, 236, 144, 20);
+    c.fillStyle = on ? PAL.orange : PAL.ink; c.fillRect(W / 2 - 70, 238, 140, 16);
+    text(T('board'), W / 2, 246, 11, PAL.cream);
+    text(T('menu.hint'), W / 2, H - 5, 7, PAL.ink, 'center', false);
+  }
+
+  // both leaderboards, opened from the level menu
+  let menuRows: (board.Entry[] | null | 'err')[] = [null, null];
+  function openMenuBoard() {
+    mode = 'menuboard'; modeT = 0;
+    menuRows = [null, null];
+    ['balkan-booby', 'adulthood'].forEach((id, i) => board.topScores(id, 10).then((r) => (menuRows[i] = r)).catch(() => (menuRows[i] = 'err')));
+  }
+  function drawMenuBoard(t: number) {
+    drawSunRays(t, PAL.night, '#173a34');
+    text(T('board'), W / 2, 16, 16, PAL.yellow);
+    ['Balkan Booby', 'Adulthood'].forEach((title, k) => {
+      const x0 = k ? W / 2 + 12 : 12, w = W / 2 - 24;
+      text(title, x0 + w / 2, 38, 12, PAL.cream);
+      const rows = menuRows[k];
+      if (rows === null) text(T('loading'), x0 + w / 2, 120, 9, PAL.cream);
+      else if (rows === 'err') text(T('boardOffline'), x0 + w / 2, 120, 9, PAL.cream);
+      else if (!rows.length) text(T('boardEmpty'), x0 + w / 2, 120, 9, PAL.cream);
+      else rows.forEach((r, i) => {
+        const yy = 58 + i * 17, col = i < 3 ? PAL.gold : PAL.cream;
+        text(`${i + 1}.`, x0 + 18, yy, 10, col, 'right');
+        text(r.name, x0 + 24, yy, 10, col, 'left');
+        text(String(r.score), x0 + w - 4, yy, 10, col, 'right');
+      });
+    });
+    // "back to menu" button (Esc and Space work too)
+    c.fillStyle = PAL.yellow; c.fillRect(W / 2 - 62, 238, 124, 22);
+    c.fillStyle = PAL.orange; c.fillRect(W / 2 - 60, 240, 120, 18);
+    text(T('boardBack'), W / 2, 249, 11, PAL.cream);
   }
 
   // ---------------- main loop ----------------
@@ -888,13 +923,21 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
         else if (autoplay) { mode = 'select'; song.load().catch((e) => (loadingErr = String(e))); }
       }
     } else if (mode === 'menu') {
-      if (nav.left || nav.up) levelSel = 0;
-      if (nav.right || nav.down) levelSel = 1;
+      if (nav.left) levelSel = 0;
+      if (nav.right) levelSel = 1;
+      if (nav.down) { lastLevel = levelSel < 2 ? levelSel : lastLevel; levelSel = 2; }
+      if (nav.up && levelSel === 2) levelSel = lastLevel;
       if (pointer && modeT > 0.2) {
-        const hit = [0, 1].find((i) => Math.abs(pointer!.x - menuX(i)) < 100 && Math.abs(pointer!.y - 150) < 80);
-        if (hit !== undefined) { if (hit === levelSel) pickLevel(); else levelSel = hit; }
-      } else if (nav.confirm && modeT > 0.2) pickLevel();
+        if (Math.abs(pointer.x - W / 2) < 76 && Math.abs(pointer.y - 246) < 13) openMenuBoard();
+        else {
+          const hit = [0, 1].find((i) => Math.abs(pointer!.x - menuX(i)) < 100 && Math.abs(pointer!.y - 150) < 80);
+          if (hit !== undefined) { if (hit === levelSel) pickLevel(); else levelSel = hit; }
+        }
+      } else if (nav.confirm && modeT > 0.2) { if (levelSel === 2) openMenuBoard(); else pickLevel(); }
       if (mode === 'menu') drawMenu(clock);
+    } else if (mode === 'menuboard') {
+      drawMenuBoard(clock);
+      if (modeT > 0.15 && (nav.confirm || nav.menu || nav.back || pointer)) { mode = 'menu'; modeT = 0; }
     } else if (mode === 'stage') {
       const p = pointer ? { x: pointer.x * 2, y: pointer.y * 2 } : null;
       const r = stage!.frame(dtReal, p, codes);
