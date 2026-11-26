@@ -45,10 +45,17 @@ const t = useT(lang);
     <p class="mt-2">{t('game.touch')}</p>
   </section>
   <section class="mx-auto max-w-4xl px-4 pb-14">
-    <h2 class="text-3xl">{gameTexts[lang].board} · Balkan Booby</h2>
-    <ol id="game-board" class="mt-4 max-w-md space-y-1 text-lg" data-empty={gameTexts[lang].boardEmpty} data-offline={gameTexts[lang].boardOffline}>
-      <li class="opacity-60">…</li>
-    </ol>
+    <h2 class="text-3xl">{gameTexts[lang].board}</h2>
+    <div class="mt-4 grid gap-8 sm:grid-cols-2">
+      {[['balkan-booby', 'Balkan Booby'], ['adulthood', 'Adulthood']].map(([id, title]) => (
+        <div>
+          <h3 class="text-xl font-bold">{title}</h3>
+          <ol class="game-board mt-2 space-y-1 text-lg" data-level={id} data-empty={gameTexts[lang].boardEmpty} data-offline={gameTexts[lang].boardOffline}>
+            <li class="opacity-60">…</li>
+          </ol>
+        </div>
+      ))}
+    </div>
   </section>
 </Base>
 
@@ -75,25 +82,26 @@ const t = useT(lang);
   // wait for the pixel font so canvas texts use it
   document.fonts?.load('16px "Lilita One"').finally(() => startGame(canvas, texts, canvas.dataset.lang as Lang));
   canvas.focus({ preventScroll: true });
-  // leaderboard list under the game
-  const list = document.getElementById('game-board')!;
-  topScores('balkan-booby', 10)
-    .then((rows) => {
-      list.replaceChildren();
-      if (!rows.length) list.innerHTML = `<li>${list.dataset.empty}</li>`;
-      rows.forEach((r, i) => {
-        const li = document.createElement('li');
-        li.className = 'flex justify-between gap-4 border-b-2 border-ink/15 py-1';
-        const who = document.createElement('span');
-        who.textContent = `${i + 1}. ${r.name}`;
-        const pts = document.createElement('span');
-        pts.className = 'font-bold';
-        pts.textContent = String(r.score);
-        li.append(who, pts);
-        list.append(li);
-      });
-    })
-    .catch(() => { list.innerHTML = `<li>${list.dataset.offline}</li>`; });
+  // leaderboard lists under the game, one per level
+  document.querySelectorAll<HTMLElement>('.game-board').forEach((list) => {
+    topScores(list.dataset.level!, 10)
+      .then((rows) => {
+        list.replaceChildren();
+        if (!rows.length) list.innerHTML = `<li>${list.dataset.empty}</li>`;
+        rows.forEach((r, i) => {
+          const li = document.createElement('li');
+          li.className = 'flex justify-between gap-4 border-b-2 border-ink/15 py-1';
+          const who = document.createElement('span');
+          who.textContent = `${i + 1}. ${r.name}`;
+          const pts = document.createElement('span');
+          pts.className = 'font-bold';
+          pts.textContent = String(r.score);
+          li.append(who, pts);
+          list.append(li);
+        });
+      })
+      .catch(() => { list.innerHTML = `<li>${list.dataset.offline}</li>`; });
+  });
   document.getElementById('game-fs')?.addEventListener('click', () => {
     const wrap = document.getElementById('game-wrap')!;
     if (document.fullscreenElement) document.exitFullscreen();

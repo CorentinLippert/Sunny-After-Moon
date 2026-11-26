@@ -46,3 +46,35 @@ export function saveName(n: string) { try { localStorage.setItem(NAME_KEY, n); }
 export function cleanName(n: string): string {
   return n.replace(/\s+/g, ' ').replace(/[^\p{L}\p{N} _.!?'-]/gu, '').trim().slice(0, 16);
 }
+
+/** One level's leaderboard for one play session: get a ticket at the start, send the score at the end, then show the top 10. */
+export class RunBoard {
+  rows: Entry[] | null = null;
+  status = '';
+  myId = -1;
+  private ticket: Promise<string | null> = Promise.resolve(null);
+  constructor(public level: string, public ranked: boolean, private T: (k: string) => string) {}
+  start() {
+    this.rows = null; this.status = ''; this.myId = -1;
+    this.ticket = this.ranked ? startRun(this.level).catch(() => null) : Promise.resolve(null);
+  }
+  async finish(score: number, coins = 0, deaths = 0, musician = '') {
+    const T = this.T;
+    this.myId = -1; this.rows = null;
+    this.status = this.ranked ? T('boardSaving') : '';
+    if (this.ranked) {
+      const ticket = await this.ticket;
+      if (!ticket) this.status = T('boardFail');
+      else {
+        try { this.myId = await submitScore(ticket, savedName() || 'Anon', Math.round(score), coins, deaths, musician); this.status = T('boardSaved'); }
+        catch { this.status = T('boardFail'); }
+      }
+    }
+    try { this.rows = await topScores(this.level, 10); }
+    catch { this.rows = null; if (!this.status) this.status = T('boardOffline'); }
+    if (this.myId >= 0 && this.rows && !this.rows.some((r) => r.id === this.myId)) {
+      const rank = await rankOf(this.level, Math.round(score)).catch(() => null);
+      if (rank) this.status = `${T('boardSaved')} #${rank}`;
+    }
+  }
+}

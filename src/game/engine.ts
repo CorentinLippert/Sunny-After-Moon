@@ -236,13 +236,9 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   // score as it was at the last checkpoint: dying takes you back there, so coins and babushkas cannot be farmed
   let cpScore = { score: 0, babs: 0, perfects: 0 };
   // online leaderboard
-  const LEVEL_ID = 'balkan-booby';
   const ranked = !autoplay && !virtual && rate === 1 && !params.get('from');
   let playerName = board.savedName();
-  let runTicket: Promise<string | null> = Promise.resolve(null);
-  let boardRows: board.Entry[] | null = null;
-  let boardStatus = '';
-  let myId = -1;
+  const runBoard = new board.RunBoard('balkan-booby', ranked, T);
   let coinTaken = new Uint8Array(level.coins.length);
   let babs: Bab[] = [];
   const floats: Float[] = [];
@@ -289,7 +285,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   function startRun() {
     score = 0; coinsGot = 0; babsBonked = 0; perfects = 0; combo = 0; deaths = 0;
     cpScore = { score: 0, babs: 0, perfects: 0 };
-    runTicket = ranked ? board.startRun(LEVEL_ID).catch(() => null) : Promise.resolve(null);
+    runBoard.start();
     coinTaken = new Uint8Array(level.coins.length);
     checkpoint = level.checkpoints[0];
     const from = Number(params.get('from') || 0);
@@ -515,7 +511,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
       mode = 'win'; modeT = 0;
       score += coinsGot * 0 + Math.max(0, 500 - deaths * 50);
       if (score > best) { best = score; try { localStorage.setItem('sam-game-best-balkan', String(best)); } catch {} }
-      sendScore();
+      runBoard.finish(score, coinsGot, deaths, char.id);
     }
   }
 
@@ -770,8 +766,10 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   // the name is typed in a real <input> on top of the canvas, so phone keyboards work too
   const nameBox = document.getElementById('game-name') as HTMLFormElement | null;
   const nameInput = nameBox?.querySelector('input') ?? null;
-  function askName() {
-    if (!nameBox || !nameInput) { mode = 'select'; modeT = 0; return; }
+  let afterName = () => { mode = 'select'; modeT = 0; };
+  function askName(then: () => void) {
+    afterName = then;
+    if (!nameBox || !nameInput) { then(); return; }
     mode = 'name'; modeT = 0;
     nameInput.value = playerName;
     nameBox.hidden = false;
@@ -790,7 +788,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     playerName = n; board.saveName(n);
     nameBox.hidden = true;
     canvas.focus({ preventScroll: true });
-    mode = 'select'; modeT = 0;
+    afterName();
   });
   function drawName(t: number) {
     drawSunRays(t, PAL.gold, PAL.yellow);
@@ -798,32 +796,10 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     text(T('nameHint'), W / 2, 178, 10, PAL.ink, 'center', false);
   }
 
-  async function loadBoard() {
-    try { boardRows = await board.topScores(LEVEL_ID, 10); }
-    catch { boardRows = null; if (!boardStatus) boardStatus = T('boardOffline'); }
-  }
-  async function sendScore() {
-    myId = -1; boardRows = null;
-    boardStatus = ranked ? T('boardSaving') : '';
-    if (ranked) {
-      const ticket = await runTicket;
-      if (!ticket) boardStatus = T('boardFail');
-      else {
-        try { myId = await board.submitScore(ticket, playerName || 'Anon', score, coinsGot, deaths, char.id); boardStatus = T('boardSaved'); }
-        catch { boardStatus = T('boardFail'); }
-      }
-    }
-    await loadBoard();
-    const got = boardRows as board.Entry[] | null;
-    if (myId >= 0 && got && !got.some((r) => r.id === myId)) {
-      const rank = await board.rankOf(LEVEL_ID, score).catch(() => null);
-      if (rank) boardStatus = `${T('boardSaved')} #${rank}`;
-    }
-  }
   function drawBoard(t: number) {
     drawSunRays(t, PAL.night, '#173a34');
     text(`${T('board')} · ${level.title}`, W / 2, 22, 16, PAL.yellow);
-    const rows = boardRows;
+    const rows = runBoard.rows, myId = runBoard.myId, boardStatus = runBoard.status;
     if (!rows) text(boardStatus || T('loading'), W / 2, 120, 11, PAL.cream);
     else if (!rows.length) text(T('boardEmpty'), W / 2, 120, 11, PAL.cream);
     else rows.forEach((r, i) => {
@@ -844,11 +820,12 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   // ---------------- level menu ----------------
   const menuX = (i: number) => W / 2 + (i ? 110 : -110);
   function pickLevel() {
-    if (levelSel === 0) { song.load().catch((e) => (loadingErr = String(e))); askName(); }
-    else enterStage();
+    // the name goes on the leaderboard of either level
+    if (levelSel === 0) { song.load().catch((e) => (loadingErr = String(e))); askName(() => { mode = 'select'; modeT = 0; }); }
+    else askName(enterStage);
   }
   function enterStage() {
-    if (!stage) stage = createStage(canvas, T, { autoplay, virtual, rate });
+    if (!stage) stage = createStage(canvas, T, { autoplay, virtual, rate, board: new board.RunBoard('adulthood', ranked, T) });
     stage.wake();
     canvas.width = 960; canvas.height = 540;
     canvas.style.imageRendering = 'auto';
