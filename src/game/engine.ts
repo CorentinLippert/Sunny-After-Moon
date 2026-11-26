@@ -3,6 +3,8 @@
 import * as art from './art';
 import { PAL } from './art';
 import * as board from './leaderboard';
+import { createStage } from './stage';
+import { createPoster } from './poster';
 
 // --- physics, keep in sync with scripts/game/level_balkan_booby.py ---
 const SPEED = 180;
@@ -170,6 +172,8 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     if (e.repeat) return;
     anyPressed = true;
     song.wake();
+    stage?.wake();
+    codes.push(code);
     if (JUMP_KEYS.includes(code)) { keys.jump = true; jumpPressed = true; }
     if (ACT_KEYS.includes(code)) { keys.action = true; actionPressed = true; }
     if (code === 'ArrowLeft' || code === 'KeyA' || code === 'KeyQ') nav.left = true;
@@ -187,6 +191,9 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   });
   // touch / mouse: left half jumps (hold to glide), right half is the action key; taps also pick a musician
   let pointer: { x: number; y: number } | null = null;
+  const codes: string[] = [];
+  // level 2 (stage puzzle) draws at 960x540 in its own style; it is created on first use
+  let stage: ReturnType<typeof createStage> | null = null;
   const touchIds = new Map<number, 'jump' | 'action'>();
   const toCanvas = (e: PointerEvent) => {
     const r = canvas.getBoundingClientRect();
@@ -196,6 +203,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     e.preventDefault();
     anyPressed = true;
     song.wake();
+    stage?.wake();
     const p = toCanvas(e);
     pointer = p;
     const side = p.x < W / 2 ? 'jump' : 'action';
@@ -212,10 +220,11 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   canvas.addEventListener('pointercancel', up);
 
   // ---------------- state ----------------
-  type Mode = 'title' | 'name' | 'select' | 'chosen' | 'loading' | 'play' | 'dead' | 'paused' | 'win' | 'board';
+  type Mode = 'title' | 'menu' | 'name' | 'select' | 'chosen' | 'loading' | 'play' | 'dead' | 'paused' | 'win' | 'board' | 'stage';
   let mode: Mode = 'title';
   let modeT = 0;
   let sel = 0;
+  let levelSel = 0;
   let char = CHARS[0];
   let loadingErr = '';
 
@@ -711,16 +720,9 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   const GRID = { cols: 4, w: 96, h: 92, x0: W / 2 - 192 + 48, y0: 92 };
   const cellPos = (i: number) => ({ x: GRID.x0 + (i % 4) * GRID.w, y: GRID.y0 + Math.floor(i / 4) * GRID.h });
 
+  const poster = createPoster();
   function drawTitle(t: number) {
-    drawSunRays(t, PAL.gold, PAL.yellow);
-    text('SUNNY AFTER MOON', W / 2, 62, 30, PAL.yellow);
-    text(T('game.subtitle'), W / 2, 92, 14, PAL.cream);
-    text(`« ${level.title} »`, W / 2, 118, 20, '#ff9fb6');
-    art.babushka(c, 90, 230, 1.6, Math.abs(Math.sin(t * 6)) * 5, 'dance', t);
-    art.babushka(c, 390, 230, 1.6, Math.abs(Math.cos(t * 6)) * 5, 'dance', t);
-    art.jelly(c, 240, 214, 120, Math.abs(Math.sin(t * 6)) * 0.6, 0);
-    if (Math.floor(t * 2) % 2 === 0) text(T('pressStart'), W / 2, 176, 13, PAL.cream);
-    if (best) text(`${T('best')}: ${best}`, W / 2, 252, 9, PAL.ink, 'center', false);
+    poster(c, W, H, t, text, T, best);
   }
 
   function drawSelect(t: number) {
@@ -776,6 +778,11 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     nameInput.focus({ preventScroll: true });
     nameInput.select();
   }
+  nameInput?.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    nameBox!.hidden = true; canvas.focus({ preventScroll: true });
+    mode = 'menu'; modeT = 0;
+  });
   nameBox?.addEventListener('submit', (e) => {
     e.preventDefault();
     const n = board.cleanName(nameInput!.value);
@@ -834,6 +841,51 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     text(T('again'), W / 2, 252, 10, PAL.cream);
   }
 
+  // ---------------- level menu ----------------
+  const menuX = (i: number) => W / 2 + (i ? 110 : -110);
+  function pickLevel() {
+    if (levelSel === 0) { song.load().catch((e) => (loadingErr = String(e))); askName(); }
+    else enterStage();
+  }
+  function enterStage() {
+    if (!stage) stage = createStage(canvas, T, { autoplay, virtual, rate });
+    stage.wake();
+    canvas.width = 960; canvas.height = 540;
+    canvas.style.imageRendering = 'auto';
+    mode = 'stage'; modeT = 0;
+    stage.enter();
+  }
+  function leaveStage() {
+    stage?.leave();
+    canvas.width = W; canvas.height = H;
+    canvas.style.imageRendering = 'pixelated';
+    c.imageSmoothingEnabled = false;
+    mode = 'menu'; modeT = 0;
+  }
+  function drawMenu(t: number) {
+    drawSunRays(t, PAL.gold, PAL.yellow);
+    text('SUNNY AFTER MOON', W / 2, 30, 22, PAL.yellow);
+    text(T('menu.choose'), W / 2, 56, 13, PAL.cream);
+    [0, 1].forEach((i) => {
+      const x = menuX(i), y = 150, on = i === levelSel;
+      c.fillStyle = on ? PAL.yellow : 'rgba(255,243,196,0.4)'; c.fillRect(x - 92, y - 70, 184, 150);
+      c.fillStyle = i ? '#96261b' : PAL.teal; c.fillRect(x - 88, y - 66, 176, 142);
+      if (i === 0) {
+        art.babushka(c, x - 40, y + 40, 1.2, Math.abs(Math.sin(t * 6)) * 4, 'dance', t);
+        art.jelly(c, x + 30, y + 20, 60, Math.abs(Math.sin(t * 6)) * 0.6, 1);
+      } else {
+        // a tiny stage with the band logo
+        c.fillStyle = '#c99a5b'; c.beginPath(); c.moveTo(x - 60, y + 6); c.lineTo(x + 60, y + 6); c.lineTo(x + 76, y + 40); c.lineTo(x - 76, y + 40); c.closePath(); c.fill();
+        c.fillStyle = PAL.yellow; c.beginPath(); c.arc(x, y - 22, 18, 0, Math.PI * 2); c.fill();
+        c.fillStyle = '#96261b'; c.beginPath(); c.arc(x, y - 22, 12, 0, Math.PI * 2); c.fill();
+        for (let k = 0; k < 7; k++) { c.fillStyle = ['#f2c9a0', '#b97a4e', '#e0a878'][k % 3]; c.beginPath(); c.arc(x - 66 + k * 22, y + 56 - Math.abs(Math.sin(t * 6 + k)) * 4, 7, 0, Math.PI * 2); c.fill(); }
+      }
+      text(i ? 'Adulthood' : 'Balkan Booby', x, y - 50, 15, on ? PAL.cream : PAL.cream);
+      text(T(i ? 'menu.stage' : 'menu.runner'), x, y + 72, 9, PAL.cream);
+    });
+    text(T('menu.hint'), W / 2, H - 14, 10, PAL.cream);
+  }
+
   // ---------------- main loop ----------------
   let prev = performance.now();
   let clock = 0;
@@ -853,11 +905,28 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
 
     if (mode === 'title') {
       drawTitle(clock);
-      if (anyPressed || autoplay) { song.load().catch((e) => (loadingErr = String(e))); if (autoplay) { mode = 'select'; modeT = 0; } else askName(); }
+      if (anyPressed || autoplay) {
+        mode = 'menu'; modeT = 0;
+        if (params.get('level') === 'adulthood') enterStage();
+        else if (autoplay) { mode = 'select'; song.load().catch((e) => (loadingErr = String(e))); }
+      }
+    } else if (mode === 'menu') {
+      if (nav.left || nav.up) levelSel = 0;
+      if (nav.right || nav.down) levelSel = 1;
+      if (pointer && modeT > 0.2) {
+        const hit = [0, 1].find((i) => Math.abs(pointer!.x - menuX(i)) < 100 && Math.abs(pointer!.y - 150) < 80);
+        if (hit !== undefined) { if (hit === levelSel) pickLevel(); else levelSel = hit; }
+      } else if (nav.confirm && modeT > 0.2) pickLevel();
+      if (mode === 'menu') drawMenu(clock);
+    } else if (mode === 'stage') {
+      const p = pointer ? { x: pointer.x * 2, y: pointer.y * 2 } : null;
+      const r = stage!.frame(dtReal, p, codes);
+      if (r === 'exit') leaveStage();
     } else if (mode === 'name') {
       drawName(clock);
       if (pointer) nameInput?.focus({ preventScroll: true });
     } else if (mode === 'select') {
+      if (nav.menu) { mode = 'menu'; modeT = 0; }
       if (nav.left) sel = (sel + 7) % 8;
       if (nav.right) sel = (sel + 1) % 8;
       if (nav.up || nav.down) sel = (sel + 4) % 8;
@@ -912,7 +981,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
       if (modeT > 0.8 && (nav.confirm || pointer)) { mode = 'select'; modeT = 0; }
     }
     (window as any).__game = { mode, t: lastT, deaths, hearts, y };
-    pointer = null; anyPressed = false;
+    pointer = null; anyPressed = false; codes.length = 0;
     nav.left = nav.right = nav.up = nav.down = nav.confirm = nav.back = nav.menu = false;
     requestAnimationFrame(frame);
   }
