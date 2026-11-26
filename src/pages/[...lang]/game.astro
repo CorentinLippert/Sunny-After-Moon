@@ -12,6 +12,7 @@ const t = useT(lang);
   <PageHeader title={t('game.title')} intro={t('game.intro')} />
   <section class="bg-night px-2 py-6 sm:px-4 sm:py-10">
     <div id="game-wrap" class="mx-auto max-w-[1440px]">
+      <div class="relative">
       <canvas
         id="game"
         width="480"
@@ -23,6 +24,15 @@ const t = useT(lang);
         data-lang={lang}
         data-texts={JSON.stringify(gameTexts[lang])}
       ></canvas>
+        <form id="game-name" hidden class="absolute inset-x-0 top-[44%] mx-auto flex w-[min(80%,26rem)] gap-2">
+          <input
+            type="text" maxlength="16" required autocomplete="nickname" enterkeyhint="go" spellcheck="false"
+            aria-label={gameTexts[lang].nameAsk}
+            class="min-w-0 flex-1 rounded-lg border-3 border-ink bg-[#fdf3e1] px-3 py-1.5 text-center text-lg font-bold text-ink sm:text-2xl"
+          />
+          <button type="submit" class="rounded-lg border-3 border-ink bg-[#6cbc92] px-4 font-bold text-ink sm:text-xl">OK</button>
+        </form>
+      </div>
       <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-[#fdf3e1]">
         <p class="font-medium">🔊 {t('game.headphones')}</p>
         <button id="game-fs" type="button" class="rounded-full border-2 border-[#fdf3e1] px-4 py-1.5 font-bold hover:bg-[#fdf3e1]/15">{t('game.fullscreen')}</button>
@@ -33,6 +43,19 @@ const t = useT(lang);
     <h2 class="text-3xl">{t('game.controls')}</h2>
     <p class="mt-3">{t('game.keys')}</p>
     <p class="mt-2">{t('game.touch')}</p>
+  </section>
+  <section class="mx-auto max-w-4xl px-4 pb-14">
+    <h2 class="text-3xl">{gameTexts[lang].board}</h2>
+    <div class="mt-4 grid gap-8 sm:grid-cols-2">
+      {[['balkan-booby', 'Balkan Booby'], ['adulthood', 'Adulthood']].map(([id, title]) => (
+        <div>
+          <h3 class="text-xl font-bold">{title}</h3>
+          <ol class="game-board mt-2 space-y-1 text-lg" data-level={id} data-empty={gameTexts[lang].boardEmpty} data-offline={gameTexts[lang].boardOffline}>
+            <li class="opacity-60">…</li>
+          </ol>
+        </div>
+      ))}
+    </div>
   </section>
 </Base>
 
@@ -53,11 +76,32 @@ const t = useT(lang);
 
 <script>
   import { startGame, type Lang } from '../../game/engine';
+  import { topScores } from '../../game/leaderboard';
   const canvas = document.getElementById('game') as HTMLCanvasElement;
   const texts = JSON.parse(canvas.dataset.texts || '{}');
   // wait for the pixel font so canvas texts use it
   document.fonts?.load('16px "Lilita One"').finally(() => startGame(canvas, texts, canvas.dataset.lang as Lang));
   canvas.focus({ preventScroll: true });
+  // leaderboard lists under the game, one per level
+  document.querySelectorAll<HTMLElement>('.game-board').forEach((list) => {
+    topScores(list.dataset.level!, 10)
+      .then((rows) => {
+        list.replaceChildren();
+        if (!rows.length) list.innerHTML = `<li>${list.dataset.empty}</li>`;
+        rows.forEach((r, i) => {
+          const li = document.createElement('li');
+          li.className = 'flex justify-between gap-4 border-b-2 border-ink/15 py-1';
+          const who = document.createElement('span');
+          who.textContent = `${i + 1}. ${r.name}`;
+          const pts = document.createElement('span');
+          pts.className = 'font-bold';
+          pts.textContent = String(r.score);
+          li.append(who, pts);
+          list.append(li);
+        });
+      })
+      .catch(() => { list.innerHTML = `<li>${list.dataset.offline}</li>`; });
+  });
   document.getElementById('game-fs')?.addEventListener('click', () => {
     const wrap = document.getElementById('game-wrap')!;
     if (document.fullscreenElement) document.exitFullscreen();

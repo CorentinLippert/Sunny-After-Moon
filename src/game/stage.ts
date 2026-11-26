@@ -4,6 +4,7 @@
 // split in six stems (Demucs) and each stem opens when the musicians who play it are on stage.
 // Phase 2: put the spotlight on the right musician at the right moment so he goes wild and the crowd parties.
 // Drawn at 960x540 in a paper cut-out collage style (photo heads on paper bodies).
+import type { RunBoard } from './leaderboard';
 import { PAL } from './art';
 import { createFx } from './stage_fx';
 
@@ -155,7 +156,7 @@ interface Fan { x: number; y: number; need: number; skin: string; shirt: string;
 interface Float { x: number; y: number; text: string; t: number; color: string; size: number }
 interface Drink { from: [number, number]; to: string; t: number; tea: boolean }
 
-export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string, opts: { autoplay: boolean; virtual: boolean; rate: number }) {
+export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string, opts: { autoplay: boolean; virtual: boolean; rate: number; board?: RunBoard }) {
   const g = canvas.getContext('2d')!;
   let level: StageLevel | null = null;
   let stems: Stems | null = null;
@@ -184,7 +185,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
   })();
 
   // ---------- run state ----------
-  type Mode = 'loading' | 'intro' | 'play' | 'end';
+  type Mode = 'loading' | 'intro' | 'play' | 'end' | 'board';
   let mode: Mode = 'loading';
   let modeT = 0;
   let preT = -SOUNDCHECK;
@@ -1114,6 +1115,25 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     g.globalAlpha = 1;
   }
 
+  // online leaderboard (top 10) after the end screen
+  function boardScreen() {
+    const b = opts.board!;
+    g.fillStyle = '#12302c'; g.fillRect(0, 0, W, H);
+    text(`${T('board')} · Adulthood`, W / 2, 50, 34, '#ffec00');
+    if (!b.rows) text(b.status || T('loading'), W / 2, H / 2, 22, PAPER);
+    else if (!b.rows.length) text(T('boardEmpty'), W / 2, H / 2, 22, PAPER);
+    else b.rows.forEach((r, i) => {
+      const y = 104 + i * 32, me = r.id === b.myId;
+      if (me) { g.fillStyle = 'rgba(255,236,0,0.2)'; g.fillRect(W / 2 - 260, y - 15, 520, 30); }
+      const col = me ? '#ffec00' : i < 3 ? '#fcc400' : PAPER;
+      text(`${i + 1}.`, W / 2 - 200, y, 22, col, 'right');
+      text(r.name, W / 2 - 180, y, 22, col, 'left');
+      text(String(r.score), W / 2 + 240, y, 22, col, 'right');
+    });
+    if (b.rows && b.status) text(b.status, W / 2, 452, 18, PAL.lime);
+    text(T('st.again'), W / 2, 500, 18, PAPER);
+  }
+
   // ---------- public frame ----------
   let clk = 0;
   return {
@@ -1134,13 +1154,18 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
       if (mode === 'loading' || !level || !stems) { g.fillStyle = '#12302c'; g.fillRect(0, 0, W, H); text(T('loading'), W / 2, H / 2, 22, PAPER); return; }
       if (mode === 'intro') {
         intro(clk);
-        if (stems.ready && (opts.autoplay || (modeT > 0.3 && (pointer || codes.some((c) => c === 'Space' || c === 'Enter'))))) { reset(); mode = 'play'; modeT = 0; }
+        if (stems.ready && (opts.autoplay || (modeT > 0.3 && (pointer || codes.some((c) => c === 'Space' || c === 'Enter'))))) { reset(); mode = 'play'; modeT = 0; opts.board?.start(); }
         return;
       }
       if (mode === 'end') {
         endScreen(modeT);
-        if (modeT > 6 && (pointer || codes.some((c) => c === 'Space' || c === 'Enter'))) { mode = 'intro'; modeT = 0; fall = 0; }
+        if (modeT > 6 && (pointer || codes.some((c) => c === 'Space' || c === 'Enter'))) { mode = opts.board ? 'board' : 'intro'; modeT = 0; fall = 0; }
         (window as any).__stage = { mode, score: Math.round(score), hits, misses, placed: mus.filter((m) => m.placed).length, perfectPlace, drinksGiven, fixes };
+        return;
+      }
+      if (mode === 'board') {
+        boardScreen();
+        if (modeT > 0.8 && (pointer || codes.some((c) => c === 'Space' || c === 'Enter'))) { mode = 'intro'; modeT = 0; }
         return;
       }
       // play
@@ -1169,6 +1194,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
         stems.stop();
         mode = 'end'; modeT = 0;
         if (score > best) { best = Math.round(score); try { localStorage.setItem('sam-game-best-adulthood', String(best)); } catch {} }
+        opts.board?.finish(score);
       }
     },
   };

@@ -45,6 +45,15 @@ const en = {
   deaths: 'Falls',
   best: 'Best',
   again: 'Space / tap: play again with another musician',
+  nameAsk: 'What is your name?',
+  nameHint: 'For the leaderboard · Enter to continue',
+  next: 'Space / tap: see the leaderboard',
+  board: 'Leaderboard',
+  boardSaving: 'Saving your score...',
+  boardSaved: 'Your score is on the leaderboard!',
+  boardFail: 'Your score could not be saved.',
+  boardOffline: 'Leaderboard not available right now.',
+  boardEmpty: 'Nobody yet. Be the first!',
 };
 type Dict = typeof en;
 
@@ -94,6 +103,15 @@ const nl: Dict = {
   deaths: 'Vallen',
   best: 'Record',
   again: 'Spatie / tik: opnieuw met een andere muzikant',
+  nameAsk: 'Wat is je naam?',
+  nameHint: 'Voor het leaderboard · Enter om verder te gaan',
+  next: 'Spatie / tik: bekijk het leaderboard',
+  board: 'Leaderboard',
+  boardSaving: 'Je score wordt opgeslagen...',
+  boardSaved: 'Je score staat op het leaderboard!',
+  boardFail: 'Je score kon niet opgeslagen worden.',
+  boardOffline: 'Leaderboard nu niet beschikbaar.',
+  boardEmpty: 'Nog niemand. Wees de eerste!',
 };
 
 const fr: Dict = {
@@ -142,6 +160,15 @@ const fr: Dict = {
   deaths: 'Chutes',
   best: 'Record',
   again: 'Espace / touche : rejouer avec un autre musicien',
+  nameAsk: 'Comment tu t\'appelles ?',
+  nameHint: 'Pour le classement · Entrée pour continuer',
+  next: 'Espace / touche : voir le classement',
+  board: 'Classement',
+  boardSaving: 'Enregistrement du score...',
+  boardSaved: 'Ton score est dans le classement !',
+  boardFail: 'Ton score n\'a pas pu être enregistré.',
+  boardOffline: 'Classement indisponible pour le moment.',
+  boardEmpty: 'Personne encore. Sois le premier !',
 };
 
 
