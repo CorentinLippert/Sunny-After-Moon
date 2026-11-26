@@ -3,6 +3,7 @@
 import * as art from './art';
 import { PAL } from './art';
 import { createStage } from './stage';
+import { createPoster } from './poster';
 
 // --- physics, keep in sync with scripts/game/level_balkan_booby.py ---
 const SPEED = 180;
@@ -696,16 +697,9 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   const GRID = { cols: 4, w: 96, h: 92, x0: W / 2 - 192 + 48, y0: 92 };
   const cellPos = (i: number) => ({ x: GRID.x0 + (i % 4) * GRID.w, y: GRID.y0 + Math.floor(i / 4) * GRID.h });
 
+  const poster = createPoster();
   function drawTitle(t: number) {
-    drawSunRays(t, PAL.gold, PAL.yellow);
-    text('SUNNY AFTER MOON', W / 2, 62, 30, PAL.yellow);
-    text(T('game.subtitle'), W / 2, 92, 14, PAL.cream);
-    text(`« ${level.title} »`, W / 2, 118, 20, '#ff9fb6');
-    art.babushka(c, 90, 230, 1.6, Math.abs(Math.sin(t * 6)) * 5, 'dance', t);
-    art.babushka(c, 390, 230, 1.6, Math.abs(Math.cos(t * 6)) * 5, 'dance', t);
-    art.jelly(c, 240, 214, 120, Math.abs(Math.sin(t * 6)) * 0.6, 0);
-    if (Math.floor(t * 2) % 2 === 0) text(T('pressStart'), W / 2, 176, 13, PAL.cream);
-    if (best) text(`${T('best')}: ${best}`, W / 2, 252, 9, PAL.ink, 'center', false);
+    poster(c, W, H, t, text, T, best);
   }
 
   function drawSelect(t: number) {

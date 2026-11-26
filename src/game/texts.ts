@@ -147,6 +147,8 @@ const fr: Dict = {
 
 // Level menu + level 2 (Adulthood, the stage puzzle)
 const stEn = {
+  'poster.tag': '8 musicians. 1 stage. Zero soundcheck.',
+  'poster.billing': 'Two levels: BALKAN BOOBY and ADULTHOOD · Now playing on sunnyaftermoon.com',
   'menu.choose': 'Choose a level',
   'menu.runner': 'rhythm runner',
   'menu.stage': 'stage puzzle',
@@ -204,6 +206,8 @@ const stEn = {
 };
 type StDict = typeof stEn;
 const stNl: StDict = {
+  'poster.tag': '8 muzikanten. 1 podium. Geen soundcheck.',
+  'poster.billing': 'Twee levels: BALKAN BOOBY en ADULTHOOD · Nu te spelen op sunnyaftermoon.com',
   'menu.choose': 'Kies een level',
   'menu.runner': 'ritme-runner',
   'menu.stage': 'podiumpuzzel',
@@ -260,6 +264,8 @@ const stNl: StDict = {
   'anim.stagedive': 'STAGEDIVE!', 'anim.moshpit': 'MOSHPIT!', 'anim.skydive': 'SKYDIVE!',
 };
 const stFr: StDict = {
+  'poster.tag': '8 musiciens. 1 scène. Zéro balance.',
+  'poster.billing': 'Deux niveaux : BALKAN BOOBY et ADULTHOOD · À jouer sur sunnyaftermoon.com',
   'menu.choose': 'Choisis un niveau',
   'menu.runner': 'course en rythme',
   'menu.stage': 'puzzle de scène',
