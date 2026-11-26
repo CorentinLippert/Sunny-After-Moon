@@ -1,4 +1,4 @@
-"""Level 2, "Adulthood": stage set-up puzzle, then spotlight moments.
+"""Level 2, "Adulthood": stage set-up puzzle (keys last, then the song starts), then spotlight moments.
 
 Input: the six Demucs stems (htdemucs_6s) of the master and the beat grid.
   python3 scripts/game/level_adulthood.py <stems dir> <beats.json> > public/game/levels/adulthood.json
@@ -53,29 +53,45 @@ def main():
     owners = {n: [m['id'] for m in mus if n in m['stems']] for n in STEMS}
     rel = {n: env[n] - np.median(env[n][int(45 / HOP):]) for n in STEMS}
 
+    # Monia 2026-11-26: the stage is set up before the song, so cues run from the start; one every bar,
+    # and in loud parts sometimes a burst of three on consecutive beats (different musicians)
     cues, last, rr = [], None, {n: 0 for n in STEMS}
     bar = 4 * 60 / bpm
-    t = 46.0
+    beat = 60 / bpm
+    t = 3.0
     big_t = [b[0] for b in BIG]
     rng = np.random.default_rng(7)
+    loud = np.mean([rel[n] for n in STEMS], axis=0)
+    loud_thr = np.percentile(loud[int(10 / HOP):], 60)
+
+    def pick(s, avoid):
+        order = sorted(STEMS, key=lambda n: -rel[n][s].mean())
+        for n in order:
+            if env[n][s].mean() < -45: continue
+            cands = owners[n]
+            for k in range(len(cands)):
+                c = cands[(rr[n] + k) % len(cands)]
+                if c not in avoid:
+                    rr[n] += 1; return c
+        return None
+
+    nbar = 0
     while t < dur - 8:
         tb = snap(t)
         if any(abs(tb - b) < bar * 1.5 for b in big_t):
             t += bar; continue
-        s = slice(int(tb / HOP), int((tb + 2 * bar) / HOP))
-        order = sorted(STEMS, key=lambda n: -rel[n][s].mean())
-        who = None
-        for n in order:
-            if env[n][s].mean() < -45: continue
-            cands = owners[n]
-            c = cands[rr[n] % len(cands)]
-            if c == last and len(cands) > 1: c = cands[(rr[n] + 1) % len(cands)]
-            if c == last: continue
-            rr[n] += 1; who = c; break
-        if who:
-            cues.append({'t': round(tb, 3), 'who': who, 'big': False, 'anim': SMALL_ANIMS[int(rng.integers(len(SMALL_ANIMS)))]})
-            last = who
-        t += 2 * bar
+        s = slice(int(tb / HOP), int((tb + bar) / HOP))
+        burst = nbar % 3 == 2 and loud[s].mean() > loud_thr
+        n_cues = 3 if burst else 1
+        avoid = [last]
+        for k in range(n_cues):
+            ck = snap(tb + k * beat)
+            who = pick(slice(int(ck / HOP), int((ck + bar) / HOP)), avoid)
+            if not who: break
+            cues.append({'t': round(ck, 3), 'who': who, 'big': False, 'anim': SMALL_ANIMS[int(rng.integers(len(SMALL_ANIMS)))]})
+            avoid.append(who); last = who
+        nbar += 1
+        t += bar
     for bt, who, anim in BIG:
         cues.append({'t': round(snap(bt), 3), 'who': who, 'big': True, 'anim': anim})
     cues.sort(key=lambda c: c['t'])

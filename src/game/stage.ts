@@ -170,6 +170,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
   let mode: Mode = 'loading';
   let modeT = 0;
   let preT = -SOUNDCHECK;
+  let setupT = 0; // seconds the band needed to set up the stage
   let lastT = -SOUNDCHECK;
   let mus: M[] = [];
   let pile: string[] = [];
@@ -205,18 +206,19 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     mus = L.musicians.map((m) => {
       const k = order.indexOf(m);
       return {
-        id: m.id, instr: m.instr, entry: m.entry, stems: m.stems,
+        id: m.id, instr: m.instr, entry: 0, stems: m.stems, // the whole stage is set up before the song (Monia 2026-11-26)
         x: DOOR[0], y: DOOR[1], arriveAt: -SOUNDCHECK + 1 + k * 2.4, on: false,
         job: null, tx: DOOR[0], ty: DOOR[1], walking: false, face: -1,
         carry: false, busy: 0, busyKind: '', placed: false, placedAt: 0, liveAt: 1e9, cable: false,
         anim: null, drinks: 0, say: '', sayT: 0, bob: r() * 6,
       };
     });
-    pile = L.musicians.map((m) => m.instr).sort(() => r() - 0.5);
+    // the keys lie at the bottom of the pile: the set-up ends with them, and then the song starts
+    pile = ['keys', ...L.musicians.map((m) => m.instr).filter((i) => i !== 'keys').sort(() => r() - 0.5)];
     stash = [null, null];
     sel = null; score = 0; hype = 0.3; perfectPlace = 0; orderOk = 0; hits = 0; misses = 0; drinksGiven = 0; fixes = 0;
     cueIdx = 0; cueDone = new Set(); disIdx = 0; cable = null; fan = null; mosh = 0; drinks = []; drinkCool = 12; floats = []; spot = null;
-    preT = -SOUNDCHECK; lastT = preT; hintT = 0; paused = false;
+    preT = -SOUNDCHECK; lastT = preT; setupT = 0; hintT = 0; paused = false;
     for (const k of Object.keys(L.song.stems)) stems!.setGain(k, 0);
   }
 
@@ -232,6 +234,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     for (let i = 0; i < b.length; i += 1) if (b[i] >= t && i % 4 === 0) return b[i];
     return t;
   };
+  const othersPlaced = () => mus.every((o) => o.placed || o.instr === 'keys');
   const audible = (m: M, t: number) => m.placed && t >= m.liveAt && !m.cable;
 
   function completeness(t: number) {
@@ -284,6 +287,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
       else say(m, T('st.notThere'));
     } else if (job.kind === 'spot') {
       if (!m.carry) { say(m, T('st.noInstr')); return; }
+      if (m.instr === 'keys' && !othersPlaced()) { say(m, T('st.keysLast')); return; }
       m.busy = INSTALL[m.instr] ?? 1; m.busyKind = 'install';
     }
   }
@@ -307,27 +311,29 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
       let pts = late <= 0 ? 1000 : Math.max(100, Math.round(1000 - late * 40));
       if (late <= 0) perfectPlace++;
       float(late <= 0 ? T('st.onTime') : `${T('st.late')} ${Math.round(late)}s`, x, y - 120, late <= 0 ? PAL.yellow : '#ff9f7a', 18);
-      if (firstOpen) { orderOk++; pts += 300; float(T('st.order'), x, y - 98, PAL.lime, 14); }
+      if (firstOpen && t >= 0) { orderOk++; pts += 300; float(T('st.order'), x, y - 98, PAL.lime, 14); }
       score += pts;
       if (sel === m) sel = null;
       hype = Math.min(1, hype + 0.04);
     }
   }
 
+  // timing window for a click: tighter for the small cues, which now also come in quick bursts (Monia 2026-11-26)
+  const win = (c: Cue) => (c.big ? 0.6 : 0.4);
   function tryCue(m: M, t: number) {
     const L = level!;
     for (let i = 0; i < L.cues.length; i++) {
       const c = L.cues[i];
       if (cueDone.has(i) || c.who !== m.id) continue;
       const d = t - c.t;
-      if (d < -0.6 || d > 0.6) continue;
+      if (d < -win(c) || d > win(c)) continue;
       cueDone.add(i);
-      const perfect = Math.abs(d) <= 0.25;
+      const perfect = Math.abs(d) <= (c.big ? 0.25 : 0.16);
       hits++;
       const mult = c.big ? 3 : 1;
       score += (perfect ? 300 : 150) * mult;
       hype = Math.min(1, hype + (c.big ? 0.25 : perfect ? 0.1 : 0.06));
-      m.anim = { kind: c.anim, t0: t, dur: c.big ? 6 : 2.6 };
+      m.anim = { kind: c.anim, t0: t, dur: c.big ? 6 : 1.6 };
       spot = m;
       if (c.anim === 'moshpit') mosh = 6;
       const [x, y] = [m.x, m.y];
@@ -403,13 +409,13 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
   function bot(t: number) {
     for (const m of mus) {
       if (!m.on || m.placed || m.busy > 0 || m.walking) continue;
-      if (m.carry) { command(m, { kind: 'spot' }); continue; }
+      if (m.carry) { if (m.instr !== 'keys' || othersPlaced()) command(m, { kind: 'spot' }); continue; }
       const top = pile[pile.length - 1];
       if (top === m.instr || stash.includes(m.instr)) { command(m, { kind: stash.includes(m.instr) ? 'stash' : 'pile' }); continue; }
       // if the top item's owner is not here yet, nothing to do: wait at the pile
     }
     const L = level!;
-    for (let i = 0; i < L.cues.length; i++) if (!cueDone.has(i) && Math.abs(L.cues[i].t - t) < 0.05) { const m = byId(L.cues[i].who); if (m.placed) tryCue(m, t); }
+    for (let i = 0; i < L.cues.length; i++) if (!cueDone.has(i) && Math.abs(L.cues[i].t - t) < 0.12) { const m = byId(L.cues[i].who); if (m.placed) tryCue(m, t); }
     if (cable && t - lastDis > 1) fixCable(t);
     if (fan && !fan.out && fan.t > 1) kickFan();
   }
@@ -435,7 +441,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     // missed cues
     for (let i = 0; i < L.cues.length; i++) {
       const c = L.cues[i];
-      if (cueDone.has(i) || t < c.t + 0.6) continue;
+      if (cueDone.has(i) || t < c.t + win(c)) continue;
       cueDone.add(i);
       if (byId(c.who).placed) { misses++; hype = Math.max(0, hype - 0.06); const m = byId(c.who); float(T('st.miss'), m.x, m.y - 130, '#ff9f7a', 16); }
     }
@@ -827,9 +833,9 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     const L = level!;
     for (let i = 0; i < L.cues.length; i++) {
       const c = L.cues[i];
-      if (cueDone.has(i) || t < c.t - 2.2 || t > c.t + 0.6) continue;
+      if (cueDone.has(i) || t < c.t - 2.2 || t > c.t + win(c)) continue;
       const m = byId(c.who);
-      if (!m.placed || m.anim) continue;
+      if (!m.placed) continue;
       const [x, y] = drawPos(m, t);
       const s = depth(y);
       const k = clamp((c.t - t) / 2.2);
@@ -951,7 +957,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     const open = mus.filter((m) => !m.placed).sort((a, b) => a.entry - b.entry)[0];
     if (open) {
       const late = t >= open.entry;
-      if (t < 0 && open.entry <= 0) { msg = `${T('st.startWith')}: ${T('instr.' + open.instr)} (${NAME[open.id]})`; }
+      if (t < 0) { msg = othersPlaced() ? `${T('st.startWith')}: ${T('instr.' + open.instr)} (${NAME[open.id]})` : T('st.buildUp'); }
       else msg = late ? `${T('st.nowPlaying')}: ${T('instr.' + open.instr)} (${NAME[open.id]})!` : `${T('st.next')}: ${T('instr.' + open.instr)} (${NAME[open.id]}) ${T('st.before')} ${fmt(open.entry)}`;
       if (late) { bg = '#ce460a'; fg = PAPER; }
     } else if (t < L.song.duration) { msg = T('st.allSet'); bg = '#b2cc3c'; }
@@ -1021,8 +1027,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     text(T('st.endTitle'), W / 2, 110, 46, '#ffec00');
     const rows: [string, string][] = [
       [T('score'), String(Math.round(score))],
-      [T('st.onTimeCount'), `${perfectPlace} / 8`],
-      [T('st.orderCount'), `${orderOk} / 8`],
+      [T('st.setupTime'), `${Math.round(setupT)} s`],
       [T('st.spotCount'), `${hits} / ${level!.cues.length}`],
       [T('st.drinks'), String(drinksGiven)],
       [T('st.fixes'), String(fixes)],
@@ -1066,8 +1071,9 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
       if (paused) { scene(lastT); hud(lastT); text(T('paused'), W / 2, H / 2, 40, '#ffec00'); if (pointer) paused = false; return; }
       let t: number;
       if (preT < 0) {
-        // soundcheck: the song only starts once the first musician of the song (Tijl, keys) is set up
-        const first = [...mus].sort((a, b) => a.entry - b.entry)[0];
+        // set-up: the song only starts once the keys (Tijl) stand, and they go last
+        setupT += dtReal * (opts.autoplay ? opts.rate : 1);
+        const first = mus.find((m) => m.instr === 'keys')!;
         preT = Math.min(-0.01, preT + dtReal * (opts.autoplay ? opts.rate : 1));
         if (first.placed) { preT = 0; stems.play(0); t = 0; } else t = preT;
       } else t = stems.time();
