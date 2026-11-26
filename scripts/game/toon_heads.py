@@ -7,10 +7,10 @@ import sys, os
 import numpy as np, cv2
 
 # cut under the chin / collar (fraction of the photo height from the top of the hair)
-CUT = {'sam': 0.7, 'yorick': 0.86, 'corentin': 0.84, 'hans': 0.86, 'tijl': 0.84, 'wim': 0.84, 'simon': 0.78, 'tomas': 0.84}
+CUT = {'sam': 0.53, 'yorick': 0.86, 'corentin': 0.84, 'hans': 0.86, 'tijl': 0.84, 'wim': 0.84, 'simon': 0.78, 'tomas': 0.84}
 # eyes (left x, right x, y) and mouth (y, kind) in units of the crop width (crop = 300 px wide)
 FACE = {
-    'sam': (0.40, 0.57, 0.31, 0.45, 'smile'),
+    'sam': (0.38, 0.60, 0.46, 0.66, 'smile'),
     'yorick': (0.36, 0.65, 0.69, 1.05, 'grin'),
     'corentin': (0.36, 0.66, 0.61, 0.86, 'smile'),
     'hans': (0.32, 0.66, 0.91, 1.28, 'flat'),
@@ -19,12 +19,21 @@ FACE = {
     'simon': (0.43, 0.67, 0.39, 0.58, 'flat'),
     'tomas': (0.25, 0.61, 0.55, 0.84, 'flat'),
 }
+# horizontal crop (fraction of the photo width) for photos that are a bust, not a head
+CROPX = {'sam': (0.27, 0.73)}
+# skin above this line (crop-width units) is hair: no bald spots
+HAIRLINE = {'sam': 0.33}
+# facial hair drawn on top (Monia, 2026-11-26): full beard, goatee, mustache
+BEARD = {'sam': ['full'], 'simon': ['goatee', 'mustache']}
 INK = (12, 20, 58)  # BGR of #3a140c
 WIDTH = 300
 
 
-def crop(path, frac):
+def crop(path, frac, name):
     im = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+    if name in CROPX:
+        x0, x1 = CROPX[name]; W0 = im.shape[1]
+        im = im[:, int(W0 * x0):int(W0 * x1)]
     a = im[:, :, 3]
     rows = np.where(a.max(1) > 128)[0]
     top, bot = rows[0], rows[-1]
@@ -96,12 +105,16 @@ def flat_regions(bgr, mask, K):
 
 
 def toon(path, out, name):
-    im = crop(path, CUT[name])
+    im = crop(path, CUT[name], name)
     h, w = im.shape[:2]
     bgr = im[:, :, :3]
     mask = cv2.morphologyEx((im[:, :, 3] > 110).astype(np.uint8), cv2.MORPH_OPEN, np.ones((7, 7), np.uint8))
     mask = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), 4) > 0.5
     L, colors = flat_regions(bgr, mask, 3)
+    if name in HAIRLINE:
+        hl = int(HAIRLINE[name] * w)
+        dark = 1 if colors[1].astype(int).sum() < colors[2].astype(int).sum() else 2
+        L[:hl][L[:hl] == 0] = dark
     res = np.zeros((h, w, 4), np.uint8)
     for k, c in enumerate(colors): res[L == k, :3] = c
     res[mask, 3] = 255
@@ -114,6 +127,32 @@ def toon(path, out, name):
     out_m = cv2.dilate(mask.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11)))
     pad = (out_m > 0) & ~mask
     res[pad] = (*INK, 255)
+    # facial hair in the darkest hair color
+    lx, rx, ey, my, kind = FACE[name]
+    s = w
+    hair = min(colors[1:], key=lambda c: int(c.astype(int).sum()))
+    hairc = (int(hair[0]), int(hair[1]), int(hair[2]), 255)
+    mx = int((lx + rx) / 2 * s)
+    for b in BEARD.get(name, []):
+        lay = np.zeros((h, w), np.uint8)
+        if b == 'full':
+            # beard around the jaw only: lower half of an oval around the mouth, inside the head
+            cv2.ellipse(lay, (mx, int((my - 0.04) * s)), (int(0.24 * s), int(0.25 * s)), 0, 0, 180, 1, -1)
+            cv2.ellipse(lay, (mx, int((my - 0.04) * s)), (int(0.25 * s), int(0.05 * s)), 0, 180, 360, 1, -1)
+            lay &= mask.astype(np.uint8)
+            lay = cv2.erode(lay, np.ones((5, 5), np.uint8))
+        elif b == 'goatee':
+            # pointed goatee under the mouth
+            pts = np.array([(mx - 0.07 * s, (my + 0.04) * s), (mx + 0.07 * s, (my + 0.04) * s), (mx + 0.04 * s, (my + 0.14) * s),
+                            (mx, (my + 0.19) * s), (mx - 0.04 * s, (my + 0.14) * s)], np.int32)
+            cv2.fillPoly(lay, [pts], 1)
+        elif b == 'mustache':
+            cv2.ellipse(lay, (mx, int((my - 0.035) * s)), (int(0.14 * s), int(0.04 * s)), 0, 180, 360, 1, -1)
+            cv2.ellipse(lay, (mx, int((my - 0.045) * s)), (int(0.14 * s), int(0.025 * s)), 0, 0, 180, 1, -1)
+        lay = cv2.GaussianBlur(lay.astype(np.float32), (0, 0), 2) > 0.5
+        res[lay] = hairc
+        ring = cv2.dilate(lay.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))).astype(bool) & ~lay & mask
+        res[ring] = (*INK, 255)
     # South Park eyes: two big white ovals that touch, small black pupils; a simple mouth
     lx, rx, ey, my, kind = FACE[name]
     s = w
@@ -124,6 +163,9 @@ def toon(path, out, name):
         cv2.ellipse(res, (cx2, int(ey * s)), (int(ew * 0.52), int(ew * 0.62)), 0, 0, 360, (*INK, 255), 3, cv2.LINE_AA)
         cv2.circle(res, (int(cx2 + (lx + rx) / 2 * s - cx) // 1 if False else cx2 + int(((lx + rx) / 2 * s - cx) * 0.12), int(ey * s + ew * 0.05)), max(3, int(ew * 0.1)), (*INK, 255), -1, cv2.LINE_AA)
     mx, mw = int((lx + rx) / 2 * s), int((rx - lx) * s * 0.45)
+    if 'full' in BEARD.get(name, []):
+        cv2.ellipse(res, (mx, int(my * s) - 4), (int(mw * 0.9), int(mw * 0.4)), 0, 0, 360, (*[int(v) for v in colors[0]], 255), -1, cv2.LINE_AA)
+        cv2.ellipse(res, (mx, int(my * s) - 4), (int(mw * 0.9), int(mw * 0.4)), 0, 0, 360, (*INK, 255), 3, cv2.LINE_AA)
     if kind == 'grin':
         pts = cv2.ellipse2Poly((mx, int(my * s) - 6), (mw, int(mw * 0.6)), 0, 0, 180, 10)
         cv2.fillPoly(res, [pts], (255, 255, 255, 255), cv2.LINE_AA); cv2.polylines(res, [pts], True, (*INK, 255), 3, cv2.LINE_AA)

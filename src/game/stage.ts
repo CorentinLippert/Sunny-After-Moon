@@ -951,7 +951,8 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     const open = mus.filter((m) => !m.placed).sort((a, b) => a.entry - b.entry)[0];
     if (open) {
       const late = t >= open.entry;
-      msg = late ? `${T('st.nowPlaying')}: ${T('instr.' + open.instr)} (${NAME[open.id]})!` : `${T('st.next')}: ${T('instr.' + open.instr)} (${NAME[open.id]}) ${T('st.before')} ${fmt(open.entry)}`;
+      if (t < 0 && open.entry <= 0) { msg = `${T('st.startWith')}: ${T('instr.' + open.instr)} (${NAME[open.id]})`; }
+      else msg = late ? `${T('st.nowPlaying')}: ${T('instr.' + open.instr)} (${NAME[open.id]})!` : `${T('st.next')}: ${T('instr.' + open.instr)} (${NAME[open.id]}) ${T('st.before')} ${fmt(open.entry)}`;
       if (late) { bg = '#ce460a'; fg = PAPER; }
     } else if (t < L.song.duration) { msg = T('st.allSet'); bg = '#b2cc3c'; }
     if (cable) { msg = `${T('st.cableMsg')} (${NAME[cable.id]})`; bg = '#ce460a'; fg = PAPER; }
@@ -961,7 +962,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
       paper([[480 - w / 2, 62], [480 + w / 2, 62], [480 + w / 2, 88], [480 - w / 2, 88]], bg, 91, { j: 1.4 });
       g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(msg, 480, 76);
     }
-    if (t < 0) text(`${T('st.soundcheck')} ${Math.ceil(-t)}`, 480, 290, 42, PAPER);
+    if (t < 0) text(T('st.soundcheck'), 480, 290, 42, PAPER);
     if (t < -12 || hintT > 0) {
       const lines = [T('st.help1'), T('st.help2')];
       g.fillStyle = 'rgba(15,38,34,.82)'; g.beginPath(); g.roundRect(250, 312, 460, 54, 10); g.fill();
@@ -1065,10 +1066,13 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
       if (paused) { scene(lastT); hud(lastT); text(T('paused'), W / 2, H / 2, 40, '#ffec00'); if (pointer) paused = false; return; }
       let t: number;
       if (preT < 0) {
-        preT += dtReal * (opts.autoplay ? opts.rate : 1);
-        if (preT >= 0) { stems.play(0); t = 0; } else t = preT;
+        // soundcheck: the song only starts once the first musician of the song (Tijl, keys) is set up
+        const first = [...mus].sort((a, b) => a.entry - b.entry)[0];
+        preT = Math.min(-0.01, preT + dtReal * (opts.autoplay ? opts.rate : 1));
+        if (first.placed) { preT = 0; stems.play(0); t = 0; } else t = preT;
       } else t = stems.time();
-      const dt = Math.max(0, Math.min(0.25, t - lastT));
+      // before the song runs, time is frozen at the soundcheck, but people still walk
+      const dt = t < 0 ? dtReal * (opts.autoplay ? opts.rate : 1) : Math.max(0, Math.min(0.25, t - lastT));
       lastT = t;
       for (const c of codes) key(c, t);
       if (pointer) click(pointer.x, pointer.y, t);
