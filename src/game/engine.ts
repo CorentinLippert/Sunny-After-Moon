@@ -2,6 +2,7 @@
 // the musician's x position is the song time multiplied by SPEED, so obstacles always meet you on the beat.
 import * as art from './art';
 import { PAL } from './art';
+import * as board from './leaderboard';
 
 // --- physics, keep in sync with scripts/game/level_balkan_booby.py ---
 const SPEED = 180;
@@ -163,6 +164,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   const ACT_KEYS = ['KeyX', 'KeyJ', 'KeyK', 'Enter', 'ShiftLeft', 'ShiftRight', 'ControlLeft'];
   addEventListener('keydown', (e) => {
     if (!canvas.isConnected) return;
+    if (e.target instanceof HTMLInputElement) return; // typing the player name
     const code = e.code;
     if ([...JUMP_KEYS, ...ACT_KEYS, 'ArrowLeft', 'ArrowRight', 'ArrowDown'].includes(code)) e.preventDefault();
     if (e.repeat) return;
@@ -210,7 +212,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   canvas.addEventListener('pointercancel', up);
 
   // ---------------- state ----------------
-  type Mode = 'title' | 'select' | 'chosen' | 'loading' | 'play' | 'dead' | 'paused' | 'win';
+  type Mode = 'title' | 'name' | 'select' | 'chosen' | 'loading' | 'play' | 'dead' | 'paused' | 'win' | 'board';
   let mode: Mode = 'title';
   let modeT = 0;
   let sel = 0;
@@ -222,6 +224,16 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
   let checkpoint = level.checkpoints[0];
   let score = 0, coinsGot = 0, babsBonked = 0, perfects = 0, combo = 0, deaths = 0, best = 0;
   let deathReason = '';
+  // score as it was at the last checkpoint: dying takes you back there, so coins and babushkas cannot be farmed
+  let cpScore = { score: 0, babs: 0, perfects: 0 };
+  // online leaderboard
+  const LEVEL_ID = 'balkan-booby';
+  const ranked = !autoplay && !virtual && rate === 1 && !params.get('from');
+  let playerName = board.savedName();
+  let runTicket: Promise<string | null> = Promise.resolve(null);
+  let boardRows: board.Entry[] | null = null;
+  let boardStatus = '';
+  let myId = -1;
   let coinTaken = new Uint8Array(level.coins.length);
   let babs: Bab[] = [];
   const floats: Float[] = [];
@@ -244,6 +256,8 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
 
   function respawn(cp = checkpoint) {
     y = GROUND; vy = 0; onGround = true; used2 = false; hearts = 3; invuln = 1.2; camY = 0;
+    clearPresses();
+    score = cpScore.score; babsBonked = cpScore.babs; perfects = cpScore.perfects; combo = 0;
     projs.length = 0;
     // coins after the checkpoint come back, so the run is the same every time
     const tok = new Uint8Array(level.coins.length);
@@ -257,8 +271,16 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     lastT = cp.t;
   }
 
+  // a key press that restarts or resumes the level must not also make the musician jump
+  function clearPresses() {
+    jumpPressed = false; actionPressed = false; buffer = 0;
+    keys.jump = false; keys.action = false; botHoldUntil = -1;
+  }
+
   function startRun() {
     score = 0; coinsGot = 0; babsBonked = 0; perfects = 0; combo = 0; deaths = 0;
+    cpScore = { score: 0, babs: 0, perfects: 0 };
+    runTicket = ranked ? board.startRun(LEVEL_ID).catch(() => null) : Promise.resolve(null);
     coinTaken = new Uint8Array(level.coins.length);
     checkpoint = level.checkpoints[0];
     const from = Number(params.get('from') || 0);
@@ -470,7 +492,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     }
 
     // checkpoints
-    for (const cp of level.checkpoints) if (cp.t > checkpoint.t && t >= cp.t) { checkpoint = cp; say(T('checkpoint'), x + 40, GROUND - 70, PAL.cream); }
+    for (const cp of level.checkpoints) if (cp.t > checkpoint.t && t >= cp.t) { checkpoint = cp; cpScore = { score, babs: babsBonked, perfects }; say(T('checkpoint'), x + 40, GROUND - 70, PAL.cream); }
 
     for (let i = 0; i < trampSquash.length; i++) trampSquash[i] = Math.max(0, trampSquash[i] - dtReal * 4);
     for (let i = 0; i < jellySquash.length; i++) jellySquash[i] = Math.max(0, jellySquash[i] - dtReal * 4);
@@ -484,6 +506,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
       mode = 'win'; modeT = 0;
       score += coinsGot * 0 + Math.max(0, 500 - deaths * 50);
       if (score > best) { best = score; try { localStorage.setItem('sam-game-best-balkan', String(best)); } catch {} }
+      sendScore();
     }
   }
 
@@ -741,6 +764,76 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     lines.forEach((l, i) => text(l, W / 2, 120 + i * 18, 11, PAL.cream));
   }
 
+  // ---------------- player name + leaderboard ----------------
+  // the name is typed in a real <input> on top of the canvas, so phone keyboards work too
+  const nameBox = document.getElementById('game-name') as HTMLFormElement | null;
+  const nameInput = nameBox?.querySelector('input') ?? null;
+  function askName() {
+    if (!nameBox || !nameInput) { mode = 'select'; modeT = 0; return; }
+    mode = 'name'; modeT = 0;
+    nameInput.value = playerName;
+    nameBox.hidden = false;
+    nameInput.focus({ preventScroll: true });
+    nameInput.select();
+  }
+  nameBox?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const n = board.cleanName(nameInput!.value);
+    if (!n) { nameInput!.focus(); return; }
+    playerName = n; board.saveName(n);
+    nameBox.hidden = true;
+    canvas.focus({ preventScroll: true });
+    mode = 'select'; modeT = 0;
+  });
+  function drawName(t: number) {
+    drawSunRays(t, PAL.gold, PAL.yellow);
+    text(T('nameAsk'), W / 2, 92, 20, PAL.cream);
+    text(T('nameHint'), W / 2, 178, 10, PAL.ink, 'center', false);
+  }
+
+  async function loadBoard() {
+    try { boardRows = await board.topScores(LEVEL_ID, 10); }
+    catch { boardRows = null; if (!boardStatus) boardStatus = T('boardOffline'); }
+  }
+  async function sendScore() {
+    myId = -1; boardRows = null;
+    boardStatus = ranked ? T('boardSaving') : '';
+    if (ranked) {
+      const ticket = await runTicket;
+      if (!ticket) boardStatus = T('boardFail');
+      else {
+        try { myId = await board.submitScore(ticket, playerName || 'Anon', score, coinsGot, deaths, char.id); boardStatus = T('boardSaved'); }
+        catch { boardStatus = T('boardFail'); }
+      }
+    }
+    await loadBoard();
+    const got = boardRows as board.Entry[] | null;
+    if (myId >= 0 && got && !got.some((r) => r.id === myId)) {
+      const rank = await board.rankOf(LEVEL_ID, score).catch(() => null);
+      if (rank) boardStatus = `${T('boardSaved')} #${rank}`;
+    }
+  }
+  function drawBoard(t: number) {
+    drawSunRays(t, PAL.night, '#173a34');
+    text(`${T('board')} · ${level.title}`, W / 2, 22, 16, PAL.yellow);
+    const rows = boardRows;
+    if (!rows) text(boardStatus || T('loading'), W / 2, 120, 11, PAL.cream);
+    else if (!rows.length) text(T('boardEmpty'), W / 2, 120, 11, PAL.cream);
+    else rows.forEach((r, i) => {
+      const yy = 48 + i * 17;
+      const me = r.id === myId;
+      if (me) { c.fillStyle = 'rgba(255,236,0,0.22)'; c.fillRect(W / 2 - 150, yy - 8, 300, 16); }
+      const col = me ? PAL.yellow : i < 3 ? PAL.gold : PAL.cream;
+      text(`${i + 1}.`, W / 2 - 120, yy, 11, col, 'right');
+      const ch = CHARS.find((x) => x.id === r.musician);
+      if (ch) drawHead(ch, W / 2 - 104, yy, 14, ch.front ?? 0);
+      text(r.name, W / 2 - 92, yy, 11, col, 'left');
+      text(String(r.score), W / 2 + 140, yy, 11, col, 'right');
+    });
+    if (rows && boardStatus) text(boardStatus, W / 2, 228, 10, PAL.lime);
+    text(T('again'), W / 2, 252, 10, PAL.cream);
+  }
+
   // ---------------- main loop ----------------
   let prev = performance.now();
   let clock = 0;
@@ -760,7 +853,10 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
 
     if (mode === 'title') {
       drawTitle(clock);
-      if (anyPressed || autoplay) { mode = 'select'; modeT = 0; song.load().catch((e) => (loadingErr = String(e))); }
+      if (anyPressed || autoplay) { song.load().catch((e) => (loadingErr = String(e))); if (autoplay) { mode = 'select'; modeT = 0; } else askName(); }
+    } else if (mode === 'name') {
+      drawName(clock);
+      if (pointer) nameInput?.focus({ preventScroll: true });
     } else if (mode === 'select') {
       if (nav.left) sel = (sel + 7) % 8;
       if (nav.right) sel = (sel + 1) % 8;
@@ -776,7 +872,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
       drawChosen(clock);
       if (modeT > 2.0 && (song.buf || virtual)) startRun();
       else if (modeT > 2.0) text(loadingErr ? loadingErr : T('loading'), W / 2, 200, 10, PAL.cream);
-    } else if (nav.menu && (mode === 'play' || mode === 'paused' || mode === 'dead' || mode === 'win')) {
+    } else if (nav.menu && (mode === 'play' || mode === 'paused' || mode === 'dead' || mode === 'win' || mode === 'board')) {
       // Esc: leave the level and go back to the character select
       song.stop();
       mode = 'select'; modeT = 0;
@@ -794,7 +890,7 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
     } else if (mode === 'paused') {
       drawWorld(lastT, xAt(lastT) - PLAYER_SCREEN_X);
       drawOverlay(T('paused'), [T('resume'), T('controls')]);
-      if (nav.confirm || nav.back || pointer) { mode = 'play'; song.play(lastT); }
+      if (nav.confirm || nav.back || pointer) { mode = 'play'; clearPresses(); song.play(lastT); }
     } else if (mode === 'dead') {
       drawWorld(lastT, xAt(lastT) - PLAYER_SCREEN_X);
       drawOverlay(T('dead'), [deathReason, T('retry')], '#ff9fb6');
@@ -807,9 +903,13 @@ export async function startGame(canvas: HTMLCanvasElement, texts: Record<string,
       text(T('win'), W / 2, 148, 22, PAL.yellow);
       text(`${T('score')}: ${score}   ·   ${T('coins')}: ${coinsGot}/${level.coins.length}   ·   ${T('babushkas')}: ${babsBonked}`, W / 2, 178, 10, PAL.cream);
       text(`${T('perfects')}: ${perfects}   ·   ${T('deaths')}: ${deaths}   ·   ${T('best')}: ${best}`, W / 2, 196, 10, PAL.cream);
-      text(T('again'), W / 2, 236, 11, PAL.lime);
-      if (modeT > 1.5 && (nav.confirm || pointer)) { mode = 'select'; modeT = 0; }
+      text(T('next'), W / 2, 236, 11, PAL.lime);
+      if (modeT > 1.5 && (nav.confirm || pointer)) { mode = 'board'; modeT = 0; }
       (window as any).__gameResult = { score, coins: coinsGot, deaths, babs: babsBonked };
+    }
+    if (mode === 'board') {
+      drawBoard(clock);
+      if (modeT > 0.8 && (nav.confirm || pointer)) { mode = 'select'; modeT = 0; }
     }
     (window as any).__game = { mode, t: lastT, deaths, hearts, y };
     pointer = null; anyPressed = false;
