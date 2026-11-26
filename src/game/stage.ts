@@ -5,6 +5,7 @@
 // Phase 2: put the spotlight on the right musician at the right moment so he goes wild and the crowd parties.
 // Drawn at 960x540 in a paper cut-out collage style (photo heads on paper bodies).
 import { PAL } from './art';
+import { createFx } from './stage_fx';
 
 const W = 960, H = 540;
 const INK = '#3a140c', PAPER = '#fdf3e1';
@@ -20,6 +21,7 @@ export interface StageLevel {
   cues: Cue[];
   disasters: Dis[];
   statement: { t: number | null; text: string };
+  loop?: [number, number]; // piano loop that plays until the whole band stands
 }
 
 // spots on the band's stage plan (x 0..1000, y 0..560, audience at the bottom), see src/components/StagePlan.astro
@@ -63,6 +65,8 @@ class Stems {
   bufs: Record<string, AudioBuffer> = {};
   srcs: AudioBufferSourceNode[] = [];
   startedAt = 0; offset = 0; playing = false; vStart = 0; muted = false;
+  // piano loop while the band sets up: all sources loop [loopA, loopB] until unloop()
+  looping = false; loopA = 0; loopB = 0; shift = 0;
   loaded = 0; total = 0; err = '';
   private loading: Promise<void> | null = null;
   constructor(public urls: Record<string, string>, public virtual: boolean, public rate: number) { this.total = Object.keys(urls).length; }
@@ -96,7 +100,9 @@ class Stems {
     const at = this.ctx.currentTime + 0.05;
     for (const [k, b] of Object.entries(this.bufs)) {
       const s = this.ctx.createBufferSource();
-      s.buffer = b; s.connect(this.gains[k]); s.start(at, this.offset);
+      s.buffer = b; s.connect(this.gains[k]);
+      if (this.looping) { s.loop = true; s.loopStart = this.loopA; s.loopEnd = this.loopB; }
+      s.start(at, this.offset);
       this.srcs.push(s);
     }
     this.startedAt = at;
@@ -104,14 +110,26 @@ class Stems {
   stop() {
     for (const s of this.srcs) { try { s.stop(); } catch {} s.disconnect(); }
     this.srcs = [];
-    if (this.playing) this.offset = this.time();
+    if (this.playing) { this.offset = this.time(); this.shift = 0; }
     this.playing = false;
   }
-  time() {
+  private raw() {
     if (!this.playing) return this.offset;
     if (this.virtual || !this.ctx) return this.offset + ((performance.now() - this.vStart) / 1000) * this.rate;
     const lat = (this.ctx as any).outputLatency || this.ctx.baseLatency || 0;
     return this.offset + this.ctx.currentTime - this.startedAt - lat;
+  }
+  time() {
+    const r = this.raw();
+    if (this.looping && r > this.loopB) return this.loopA + ((r - this.loopA) % (this.loopB - this.loopA));
+    return r - this.shift;
+  }
+  loop(a: number, b: number) { this.looping = true; this.loopA = a; this.loopB = b; this.shift = 0; }
+  unloop() {
+    if (!this.looping) return;
+    const r = this.raw(), p = this.time();
+    this.shift = r - p; this.looping = false;
+    for (const s of this.srcs) s.loop = false; // the sources play on from where they are
   }
   setGain(k: string, v: number) {
     const g = this.gains[k];
@@ -171,6 +189,9 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
   let modeT = 0;
   let preT = -SOUNDCHECK;
   let setupT = 0; // seconds the band needed to set up the stage
+  let fall = 0; // 0..1: the stage rig falling over the band at the end
+  let fxDt = 0;
+  const fx = createFx(g, (s, x, y, size, col) => text(s, x, y, size, col));
   let lastT = -SOUNDCHECK;
   let mus: M[] = [];
   let pile: string[] = [];
@@ -195,14 +216,15 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     const r = rng(42), a: Fan[] = [];
     const skins = ['#f2c9a0', '#e0a878', '#b97a4e', '#7a4a2c', '#f6d7b6'];
     const shirts = ['#ce460a', '#6cbc92', '#ffec00', '#96261b', '#b2cc3c', '#3f8f86', '#fdf3e1', '#e2622a'];
-    for (let k = 0; k < 84; k++) a.push({ x: 18 + r() * 924, y: 452 + r() * 80, need: r(), skin: skins[Math.floor(r() * 5)], shirt: shirts[Math.floor(r() * 8)], hat: r() < 0.35 ? Math.floor(r() * 3) : -1, ph: r() * 6, order: r() });
+    for (let k = 0; k < 230; k++) a.push({ x: 18 + r() * 924, y: 452 + r() * 80, need: r(), skin: skins[Math.floor(r() * 5)], shirt: shirts[Math.floor(r() * 8)], hat: r() < 0.35 ? Math.floor(r() * 3) : -1, ph: r() * 6, order: r() });
     return a.sort((p, q) => p.order - q.order);
   })();
 
   function reset() {
     const L = level!;
     const r = rng(opts.autoplay ? 1234 : Date.now());
-    const order = [...L.musicians].sort(() => r() - 0.5);
+    // Tijl comes in first with the keys; the others in a random order
+    const order = [L.musicians.find((m) => m.instr === 'keys')!, ...L.musicians.filter((m) => m.instr !== 'keys').sort(() => r() - 0.5)];
     mus = L.musicians.map((m) => {
       const k = order.indexOf(m);
       return {
@@ -213,12 +235,13 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
         anim: null, drinks: 0, say: '', sayT: 0, bob: r() * 6,
       };
     });
-    // the keys lie at the bottom of the pile: the set-up ends with them, and then the song starts
-    pile = ['keys', ...L.musicians.map((m) => m.instr).filter((i) => i !== 'keys').sort(() => r() - 0.5)];
+    // the keys lie on top of the pile: Tijl sets up first, the piano loop starts, then the rest (Monia 2026-11-26)
+    pile = [...L.musicians.map((m) => m.instr).filter((i) => i !== 'keys').sort(() => r() - 0.5), 'keys'];
     stash = [null, null];
     sel = null; score = 0; hype = 0.3; perfectPlace = 0; orderOk = 0; hits = 0; misses = 0; drinksGiven = 0; fixes = 0;
     cueIdx = 0; cueDone = new Set(); disIdx = 0; cable = null; fan = null; mosh = 0; drinks = []; drinkCool = 12; floats = []; spot = null;
-    preT = -SOUNDCHECK; lastT = preT; setupT = 0; hintT = 0; paused = false;
+    preT = -SOUNDCHECK; lastT = preT; setupT = 0; fall = 0;
+    fx.schedule(L.song.duration, L.loop ? L.loop[1] : 12, opts.autoplay ? 5 : Date.now() & 0xffff); hintT = 0; paused = false;
     for (const k of Object.keys(L.song.stems)) stems!.setGain(k, 0);
   }
 
@@ -234,7 +257,6 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     for (let i = 0; i < b.length; i += 1) if (b[i] >= t && i % 4 === 0) return b[i];
     return t;
   };
-  const othersPlaced = () => mus.every((o) => o.placed || o.instr === 'keys');
   const audible = (m: M, t: number) => m.placed && t >= m.liveAt && !m.cable;
 
   function completeness(t: number) {
@@ -242,7 +264,8 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     if (!exp.length) return 1;
     return exp.filter((m) => audible(m, t)).length / exp.length;
   }
-  const crowdCount = (t: number) => Math.round(6 + 72 * clamp((t + SOUNDCHECK) / 180));
+  // the field fills up during the song: packed at the end (Monia 2026-11-26)
+  const crowdCount = (t: number) => Math.round(6 + (FANS.length - 6) * clamp((t + SOUNDCHECK) / ((level ? level.song.duration : 270) * 0.85)));
   const mood = (t: number) => (t < 0 ? 0.45 : completeness(t) * (0.45 + 0.55 * hype));
 
   function updateGains(t: number) {
@@ -287,7 +310,6 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
       else say(m, T('st.notThere'));
     } else if (job.kind === 'spot') {
       if (!m.carry) { say(m, T('st.noInstr')); return; }
-      if (m.instr === 'keys' && !othersPlaced()) { say(m, T('st.keysLast')); return; }
       m.busy = INSTALL[m.instr] ?? 1; m.busyKind = 'install';
     }
   }
@@ -306,7 +328,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
       m.carry = false; m.placed = true; m.placedAt = t;
       m.liveAt = t < m.entry ? m.entry : nextBar(t);
       const [x, y] = spotXY(m);
-      const late = Math.max(0, t - m.entry);
+      const late = t < 0 || stems!.looping ? 0 : Math.max(0, t - m.entry);
       const firstOpen = mus.filter((o) => !o.placed && o !== m).every((o) => o.entry >= m.entry);
       let pts = late <= 0 ? 1000 : Math.max(100, Math.round(1000 - late * 40));
       if (late <= 0) perfectPlace++;
@@ -336,6 +358,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
       m.anim = { kind: c.anim, t0: t, dur: c.big ? 6 : 1.6 };
       spot = m;
       if (c.anim === 'moshpit') mosh = 6;
+      if (c.big) { fx.confetti(m.x, m.y - 120, 90); fx.strobe(); } else if (perfect) fx.confetti(m.x, m.y - 110, 16);
       const [x, y] = [m.x, m.y];
       float(c.big ? T('anim.' + c.anim) : perfect ? T('st.perfect') : T('st.good'), x, y - 140, c.big ? PAL.yellow : perfect ? PAL.yellow : PAL.lime, c.big ? 30 : 20);
       return true;
@@ -409,7 +432,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
   function bot(t: number) {
     for (const m of mus) {
       if (!m.on || m.placed || m.busy > 0 || m.walking) continue;
-      if (m.carry) { if (m.instr !== 'keys' || othersPlaced()) command(m, { kind: 'spot' }); continue; }
+      if (m.carry) { command(m, { kind: 'spot' }); continue; }
       const top = pile[pile.length - 1];
       if (top === m.instr || stash.includes(m.instr)) { command(m, { kind: stash.includes(m.instr) ? 'stash' : 'pile' }); continue; }
       // if the top item's owner is not here yet, nothing to do: wait at the pile
@@ -424,6 +447,9 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
   // ---------- simulation ----------
   function update(t: number, dt: number) {
     const L = level!;
+    fxDt += dt; fx.stepParts(dt);
+    // confetti cannons when the party peaks
+    if (t > 0 && hype > 0.8 && Math.random() < dt * 0.6) fx.confetti(Math.random() < 0.5 ? 250 : 710, 380, 50);
     if (opts.autoplay) bot(t);
     for (const m of mus) {
       if (!m.on && t >= m.arriveAt) { m.on = true; m.x = DOOR[0]; m.y = DOOR[1]; const k = mus.filter((o) => o.on).length - 1; command(m, { kind: 'walk', x: 780 - k * 62, y: 366 + (k % 2) * 22 }); if (opts.autoplay) m.job = null; }
@@ -600,11 +626,18 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     const sunY = lerp(70, 300, clamp(p / 0.5));
     if (sunY < 300) { ell(110, sunY, 42, 42, 'rgba(255,236,0,.25)', 0); ell(110, sunY, 32, 32, '#ffec00', 0); }
     const moonY = lerp(320, 70, clamp((p - 0.35) / 0.35));
-    if (p > 0.35) { ell(850, moonY, 30, 30, '#fdf3e1', 0); ell(838, moonY - 6, 26, 26, top, 0); }
+    if (p > 0.35 && !fx.moon(t, 850, moonY)) { ell(850, moonY, 30, 30, '#fdf3e1', 0); ell(838, moonY - 6, 26, 26, top, 0); }
+    fx.sky(t, nightK);
     // torn paper hills
     paper([[0, 210], [140, 170], [300, 200], [470, 160], [650, 196], [820, 168], [960, 190], [960, 300], [0, 300]], mixc([108, 188, 146], [34, 70, 70], clamp((p - 0.4) / 0.4)), 21, { j: 4, stroke: false });
     paper([[0, 240], [200, 215], [420, 236], [640, 210], [960, 232], [960, 320], [0, 320]], mixc([63, 143, 134], [24, 52, 56], clamp((p - 0.4) / 0.4)), 22, { j: 4, stroke: false });
     g.fillStyle = mixc([79, 125, 54], [28, 52, 34], clamp((p - 0.4) / 0.4)); g.fillRect(0, 300, W, 240);
+    if (fall <= 0) rig(t);
+  }
+
+  // backdrop curtain, logo, statement and truss (they fall over at the end of the song)
+  function rig(t: number) {
+    const L = level!;
     // backdrop curtain with the logo
     rect(236, 58, 488, 182, '#96261b', 31);
     g.fillStyle = 'rgba(0,0,0,.12)'; for (let x = 250; x < 720; x += 30) g.fillRect(x, 62, 12, 174);
@@ -956,8 +989,9 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     let msg = '', bg = PAPER, fg = INK;
     const open = mus.filter((m) => !m.placed).sort((a, b) => a.entry - b.entry)[0];
     if (open) {
-      const late = t >= open.entry;
-      if (t < 0) { msg = othersPlaced() ? `${T('st.startWith')}: ${T('instr.' + open.instr)} (${NAME[open.id]})` : T('st.buildUp'); }
+      const late = t >= open.entry && !stems!.looping;
+      if (t < 0) { msg = `${T('st.startWith')}: ${T('instr.' + open.instr)} (${NAME[open.id]})`; }
+      else if (stems!.looping) { msg = T('st.loopMsg'); }
       else msg = late ? `${T('st.nowPlaying')}: ${T('instr.' + open.instr)} (${NAME[open.id]})!` : `${T('st.next')}: ${T('instr.' + open.instr)} (${NAME[open.id]}) ${T('st.before')} ${fmt(open.entry)}`;
       if (late) { bg = '#ce460a'; fg = PAPER; }
     } else if (t < L.song.duration) { msg = T('st.allSet'); bg = '#b2cc3c'; }
@@ -981,22 +1015,25 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
 
   function scene(t: number) {
     backdrop(t);
-    lights(t);
+    if (fall <= 0) lights(t);
     stageFloor();
     spotMarks(t);
     const items: { y: number; f: () => void }[] = [];
     items.push({ y: CASE_TOP + 10, f: pileDraw });
     for (const m of mus) if (m.placed) { const [, iy] = instrXY(m); items.push({ y: iy - 0.5, f: () => { const [x, y] = instrXY(m); drawInstr(m.instr, x, y, depth(y) * (m.instr === 'drums' ? 1 : 0.9), 6, m.cable); } }); }
-    for (const m of mus) if (m.on) { const [, y] = drawPos(m, t); items.push({ y: m.anim && (m.anim.kind === 'stagedive' || m.anim.kind === 'moshpit') ? 1000 : y, f: () => drawMusician(m, t) }); }
+    for (const m of mus) if (m.on && fall < 1) { const [, y] = drawPos(m, t); items.push({ y: m.anim && (m.anim.kind === 'stagedive' || m.anim.kind === 'moshpit') ? 1000 : y, f: () => drawMusician(m, t) }); }
     if (fan) items.push({ y: fan.y, f: () => drawFan(t) });
     items.sort((a, b) => a.y - b.y);
     const front = items.filter((i) => i.y >= 1000);
     items.filter((i) => i.y < 1000).forEach((i) => i.f());
     for (const m of mus) if (m.cable) { const [x, y] = instrXY(m); text(Math.sin(t * 20) > 0 ? '⚡' : '!', x, y - 70, 26, '#ffec00'); }
     spotlight(t);
-    if (spot && spot.anim) drawMusician(spot, t);
+    if (spot && spot.anim && fall < 1) drawMusician(spot, t);
     cueRings(t);
+    fx.stage(t, beatPhase(t));
     crowd(t);
+    const pp = clamp((t + SOUNDCHECK) / (level!.song.duration + SOUNDCHECK));
+    fx.crowd(t, fxDt, hype, clamp((pp - 0.55) / 0.25), beatPhase(t)); fxDt = 0;
     front.forEach((i) => i.f());
     drawDrinks();
     if (grainPat) { g.fillStyle = grainPat; g.fillRect(0, 0, W, H); }
@@ -1021,9 +1058,48 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
     if (best) text(`${T('best')}: ${best}`, W / 2, 522, 13, '#b9d2c6', 'center', false);
   }
 
-  function endScreen(clk: number) {
+  // the end: the whole stage rig falls over onto the band (Monia 2026-11-26)
+  function collapse(clk: number) {
+    const f = clamp(clk / 1.1), e = f * f;
+    fall = e;
+    const shake = clk > 1.1 && clk < 1.6 ? (1.6 - clk) * 30 : 0;
+    g.save(); g.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
     scene(lastT);
-    g.fillStyle = 'rgba(15,38,34,.8)'; g.fillRect(0, 0, W, H);
+    // the rig pivots forward around the stage floor at y 240: the top ends up at the front of the stage
+    const sy = 1 - 1.84 * e, sx = 1 + 0.3 * e; // lands with its top on the front edge of the stage
+    if (sy > 0) {
+      g.save(); g.translate(480, 240); g.scale(sx, sy); g.translate(-480, -240); rig(lastT); g.restore();
+    } else {
+      const yTop = 240 - 182 * sy, xl = 480 - 254 * sx, xr = 480 + 254 * sx;
+      paper([[480 - 254, 240], [480 + 254, 240], [xr, yTop], [xl, yTop]], '#6a1a12', 77, { j: 3 });
+      g.fillStyle = '#20302d'; g.fillRect(xl - 6, yTop - 10, xr - xl + 12, 16);
+      g.strokeStyle = '#4a5a56'; g.lineWidth = 1.5; for (let x = xl; x < xr; x += 18) { g.beginPath(); g.moveTo(x, yTop - 8); g.lineTo(x + 9, yTop + 4); g.stroke(); }
+      if (f >= 1) {
+        // legs sticking out from under the rig, twitching
+        mus.forEach((m, i) => {
+          const lx = lerp(xl + 40, xr - 40, (ROSTER.indexOf(m.id) + 0.5) / 8), ly = yTop + 6, tw = Math.sin(clk * 14 + i * 2) * (clk < 4 ? 4 : 0);
+          g.strokeStyle = INK; g.lineWidth = 5; g.lineCap = 'round';
+          g.beginPath(); g.moveTo(lx - 6, ly); g.lineTo(lx - 10, ly + 26 + tw); g.moveTo(lx + 6, ly); g.lineTo(lx + 12, ly + 24 - tw); g.stroke();
+          ell(lx - 13, ly + 29 + tw, 8, 5, COLOR[m.id], 1.5); ell(lx + 15, ly + 27 - tw, 8, 5, COLOR[m.id], 1.5);
+        });
+        // dust
+        if (clk < 3.2) { const k = (clk - 1.1) / 2.1; g.globalAlpha = 0.7 * (1 - k); for (let i = 0; i < 9; i++) ell(lerp(xl, xr, i / 8), yTop + 10 - k * 30, 40 + k * 60, 20 + k * 26, '#d8cbb0', 0); g.globalAlpha = 1; }
+      }
+    }
+    g.restore();
+    if (clk > 1.5) {
+      const k = clamp((clk - 1.5) / 0.3);
+      text('OMG!', W / 2, 150, 70 * k, '#ffec00');
+      if (clk > 2.1) text('THEY KILLED SUNNY AFTER MOON!', W / 2, 230, 44 * clamp((clk - 2.1) / 0.3), PAPER);
+    }
+  }
+
+  function endScreen(clk: number) {
+    collapse(clk);
+    if (clk < 5) return;
+    const k = clamp((clk - 5) / 0.5);
+    g.fillStyle = `rgba(15,38,34,${0.82 * k})`; g.fillRect(0, 0, W, H);
+    g.globalAlpha = k;
     text(T('st.endTitle'), W / 2, 110, 46, '#ffec00');
     const rows: [string, string][] = [
       [T('score'), String(Math.round(score))],
@@ -1034,7 +1110,8 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
       [T('best'), String(best)],
     ];
     rows.forEach(([k, v], i) => { text(k, W / 2 - 20, 170 + i * 34, 20, PAPER, 'right'); text(v, W / 2 + 20, 170 + i * 34, 20, '#ffec00', 'left'); });
-    if (clk > 1.5) text(T('st.again'), W / 2, 440, 18, PAL.lime);
+    if (clk > 6) text(T('st.again'), W / 2, 440, 18, PAL.lime);
+    g.globalAlpha = 1;
   }
 
   // ---------- public frame ----------
@@ -1062,7 +1139,7 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
       }
       if (mode === 'end') {
         endScreen(modeT);
-        if (modeT > 1.5 && (pointer || codes.some((c) => c === 'Space' || c === 'Enter'))) { mode = 'intro'; modeT = 0; }
+        if (modeT > 6 && (pointer || codes.some((c) => c === 'Space' || c === 'Enter'))) { mode = 'intro'; modeT = 0; fall = 0; }
         (window as any).__stage = { mode, score: Math.round(score), hits, misses, placed: mus.filter((m) => m.placed).length, perfectPlace, drinksGiven, fixes };
         return;
       }
@@ -1072,11 +1149,13 @@ export function createStage(canvas: HTMLCanvasElement, T: (k: string) => string,
       let t: number;
       if (preT < 0) {
         // set-up: the song only starts once the keys (Tijl) stand, and they go last
-        setupT += dtReal * (opts.autoplay ? opts.rate : 1);
         const first = mus.find((m) => m.instr === 'keys')!;
         preT = Math.min(-0.01, preT + dtReal * (opts.autoplay ? opts.rate : 1));
-        if (first.placed) { preT = 0; stems.play(0); t = 0; } else t = preT;
+        if (first.placed) { preT = 0; const L = level!; if (L.loop) stems.loop(L.loop[0], L.loop[1]); stems.play(0); t = 0; } else t = preT;
       } else t = stems.time();
+      if (!mus.every((m) => m.placed)) setupT += dtReal * (opts.autoplay ? opts.rate : 1);
+      // the whole band stands: the piano loop lets go and the song plays on
+      if (stems.looping && mus.every((m) => m.placed)) { stems.unloop(); t = stems.time(); }
       // before the song runs, time is frozen at the soundcheck, but people still walk
       const dt = t < 0 ? dtReal * (opts.autoplay ? opts.rate : 1) : Math.max(0, Math.min(0.25, t - lastT));
       lastT = t;
